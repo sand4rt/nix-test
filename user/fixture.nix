@@ -10,9 +10,10 @@ let
 in
 {
   testing.fixtures.user = mkFixture (_fixtures: {
-    locate = node: name: mkLocator {
+    locate = machine: name: mkLocator {
       type = "user";
-      inherit node name;
+      node = machine.name;
+      inherit name;
       description = "user ${name}";
     };
     run = target: command: mkAction "userCommand" {
