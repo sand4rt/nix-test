@@ -28,6 +28,7 @@
           { pkgs, ... }:
           {
             imports = [
+              ./browser/fixture.test.nix
               ./container/fixture.test.nix
               ./expect/fixture.test.nix
               ./filesystem/fixture.test.nix
