@@ -1,4 +1,4 @@
-# Nix Tests
+# ❄️ Nix Tests
 
 > A declarative framework for testing user-facing behavior in Nix, combining a
 > Playwright-style API with Testing Library's philosophy.
@@ -56,7 +56,3 @@ Or run one test by its name:
 ```sh
 nix build '.#checks.aarch64-linux."shows greeting"' --no-link -L
 ```
-
-See the [documentation](docs/src/README.md),
-[getting-started guide](docs/src/getting-started.md), and generated
-[API reference](docs/src/reference/README.md) for more information.
