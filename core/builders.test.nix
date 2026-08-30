@@ -31,6 +31,10 @@ assert target == {
 };
 assert (matcher { } locator).type == "sampleAssertion";
 assert fails (matcher { } target);
+assert (builders.mkAction "expected" { _kind = "wrong"; type = "wrong"; }).type == "expected";
+assert (builders.mkAction "expected" { _kind = "wrong"; })._kind == "action";
+assert (builders.mkLocator { _kind = "wrong"; type = "sample"; })._kind == "locator";
+assert (builders.mkTarget "expected" { _kind = "wrong"; type = "wrong"; }).type == "expected";
 pkgs.runCommand "nix-test-builders-unit" { } ''
   touch "$out"
 ''

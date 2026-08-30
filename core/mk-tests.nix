@@ -65,7 +65,6 @@ let
     "http"
     "user"
     "container"
-    "step"
     "browser"
     "desktop"
     "result"
@@ -132,9 +131,22 @@ let
     name:
     let
       actions = cases.${name}.actions;
+      validAction =
+        action:
+        builtins.isAttrs action
+        && (action._kind or null) == "action"
+        && builtins.isString (action.type or null)
+        && (
+          action.type != "step"
+          || (
+            builtins.isString (action.name or null)
+            && builtins.isList (action.actions or null)
+            && builtins.all validAction action.actions
+          )
+        );
     in
     !builtins.isList actions
-    || !(builtins.all (action: builtins.isAttrs action && (action._kind or null) == "action") actions)
+    || !(builtins.all validAction actions)
   ) (builtins.attrNames cases);
   machineActionTypes = [
     "browserAction"
@@ -193,9 +205,36 @@ let
     actions: builtins.filter (action: action.type == "machineConfigure") actions;
   configuredNodes =
     actions:
-    pkgs.lib.foldl' pkgs.lib.recursiveUpdate { } (
-      map (action: action.nodes) (machineConfigurations actions)
-    );
+    pkgs.lib.foldl' (
+      nodes: action:
+      pkgs.lib.foldlAttrs (
+        result: name: options:
+        result
+        // {
+          ${name}.modules = (result.${name}.modules or [ ]) ++ options.modules;
+        }
+      ) nodes action.nodes
+    ) { } (machineConfigurations actions);
+  workspaceActionTypes = [
+    "copyFile"
+    "copyTree"
+    "makeDirectory"
+    "removePath"
+    "setMode"
+    "symlink"
+    "writeFile"
+  ];
+  invalidNamedMachineWorkspaces = builtins.filter (
+    name:
+    let
+      actions = flattenActions cases.${name}.actions;
+      nodes = configuredNodes actions;
+    in
+    actions != [ ]
+    && builtins.any (action: builtins.elem action.type workspaceActionTypes) actions
+    && builtins.any (action: action.type == "machineConfigure") actions
+    && !(builtins.hasAttr "machine" nodes)
+  ) (builtins.attrNames cases);
   browserConfigurations =
     actions: builtins.filter (action: action.type == "browserConfigure") actions;
 in
@@ -224,6 +263,8 @@ assert pkgs.lib.assertMsg (invalidCases == [ ])
   "nix-test: tests must return only actions created with lib.mkAction: ${builtins.concatStringsSep ", " invalidCases}";
 assert pkgs.lib.assertMsg (missingMachineConfigurations == [ ])
   "nix-test: machine actions require machine.configure or machines.configure: ${builtins.concatStringsSep ", " missingMachineConfigurations}";
+assert pkgs.lib.assertMsg (invalidNamedMachineWorkspaces == [ ])
+  "nix-test: workspace actions in machine tests require the default machine; named-machine workspace staging is not yet supported: ${builtins.concatStringsSep ", " invalidNamedMachineWorkspaces}";
 builtins.mapAttrs (
   name: case:
   if builtins.any (action: action.type == "machineConfigure") (flattenActions case.actions) then

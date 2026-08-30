@@ -62,7 +62,13 @@
     {
       overlays.default = import ./overlay.nix;
       flakeModules.default = import ./module.nix;
-      lib = (import ./core/builders.nix) // {
+      lib =
+        let
+          builders = import ./core/builders.nix;
+        in
+        builders
+        // {
+        test = import ./step/fixture.nix builders;
         fixtures =
           { pkgs }:
           import ./core/fixtures.nix {
@@ -70,7 +76,7 @@
             inherit (pkgs) lib;
           };
         mkTests = import ./core/mk-tests.nix;
-      };
+        };
 
       packages = builtins.mapAttrs (
         system: pkgs:

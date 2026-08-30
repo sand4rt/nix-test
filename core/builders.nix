@@ -37,11 +37,11 @@
   */
   mkAction =
     type: payload:
-    {
+    payload
+    // {
       _kind = "action";
       inherit type;
-    }
-    // payload;
+    };
 
   /**
     @doc lib.mkLocator
@@ -61,7 +61,7 @@
     locator:
     assert builtins.isAttrs locator;
     assert builtins.isString (locator.type or null);
-    { _kind = "locator"; } // locator;
+    locator // { _kind = "locator"; };
 
   /**
     @doc lib.mkTarget
@@ -76,11 +76,11 @@
   */
   mkTarget =
     type: payload:
-    {
+    payload
+    // {
       _kind = "target";
       inherit type;
-    }
-    // payload;
+    };
 
   /**
     @doc lib.mkMatcher

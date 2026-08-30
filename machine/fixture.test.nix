@@ -1,4 +1,4 @@
-{ ... }:
+{ test, ... }:
 {
   test."reports service state" = { machine, expect }: [
     (machine.configure {
@@ -69,7 +69,6 @@
       service,
       workspace,
       expect,
-      step,
     }:
     [
       (machine.configure {
@@ -86,7 +85,7 @@
           }
         ];
       })
-      (step "observe public state" [
+      (test.step "observe public state" [
         (expect.toBeActive (machine.service "observable.service"))
         (expect.toExist (machine.file "/run/observable/state"))
         (expect.toHaveContent (machine.file "/run/observable/state") "ready")

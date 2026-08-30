@@ -6,7 +6,9 @@
       builders = import ./core/builders.nix;
     in
     {
-      config._module.args = builders;
+      config._module.args = builders // {
+        test = import ./step/fixture.nix builders;
+      };
       /**
         @doc test
         ## `test`

@@ -28,7 +28,6 @@ let
     ../network/fixture.nix
     ../result/fixture.nix
     ../service/fixture.nix
-    ../step/fixture.nix
     ../user/fixture.nix
   ];
   workspaceModule = import ../workspace/fixture.nix {

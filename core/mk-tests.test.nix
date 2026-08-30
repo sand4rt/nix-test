@@ -68,6 +68,13 @@ assert
   (builtInFixtures.expect.toExist ((builtInFixtures.machines.node "server").file "/run/ready"))
   .command == "test -e /run/ready";
 assert fails (builtInFixtures.workspace.writeFile "../escape" "no");
+assert fails (builtInFixtures.workspace.remove "");
+assert fails (builtInFixtures.workspace.setMode "." "0700");
+assert fails (builtInFixtures.network.endpoint {
+  from = builtInFixtures.machine;
+  port = 0;
+});
+assert fails (builtInFixtures.machine.endpoint.tcp 65536);
 assert fails (mkTests {
   inherit pkgs;
   test = {
@@ -107,6 +114,12 @@ assert fails (mkTests {
 assert fails (mkTests {
   inherit pkgs;
   test.sample = _: [ { type = "notAnAction"; } ];
+});
+assert fails (mkTests {
+  inherit pkgs;
+  test.sample = _: [
+    ((import ../step/fixture.nix builders).step "invalid" [ { type = "notAnAction"; } ])
+  ];
 });
 assert fails (mkTests {
   inherit pkgs;

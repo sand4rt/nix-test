@@ -210,10 +210,10 @@ groups of named nodes.
 
 ## Steps
 
-Use `step` to add nested diagnostic names:
+Use `test.step` to add nested diagnostic names:
 
 ```nix
-(step "service becomes usable" [
+(test.step "service becomes usable" [
   (expect.toBeActive (machine.service "example.service"))
   (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
 ])

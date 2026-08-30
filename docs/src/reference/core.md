@@ -95,6 +95,18 @@ to empty attribute sets. Reserve `test.configure` for suite-wide defaults.
 
 ---
 
+## `lib.test.step`
+
+```nix
+test.step "user sees ready state" [
+  (expect.toBeVisible (terminal.getByText "ready"))
+]
+```
+
+Groups related actions under a diagnostic name.
+
+---
+
 ## `test`
 
 ```nix
