@@ -17,13 +17,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@v20
+      - uses: DeterminateSystems/magic-nix-cache-action@v13
       - name: Configure GitHub Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
+      - name: Check generated API reference
+        run: |
+          nix run .#generate-docs
+          git diff --exit-code -- docs/src/reference
       - name: Build documentation
-        run: nix build .#docs
+        run: nix build .#docs -L
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:

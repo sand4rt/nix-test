@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NIX_CONFIG: |-
+    experimental-features = nix-command flakes
+    show-trace = true
+
+jobs:
+  evaluate:
+    name: Evaluate flake
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DeterminateSystems/nix-installer-action@v20
+      - uses: DeterminateSystems/magic-nix-cache-action@v13
+      - name: Check flake metadata
+        run: nix flake metadata --no-write-lock-file
+      - name: Enumerate checks
+        run: nix eval --json .#checks.x86_64-linux --apply builtins.attrNames
+      - name: Check generated documentation
+        run: |
+          nix run .#generate-docs
+          git diff --exit-code
+
+  fast-tests:
+    name: ${{ matrix.check }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - builders-unit
+          - mk-tests-unit
+          - docs
+          - interop passes
+          - custom fixtures and matchers
+          - matches visible terminal behavior
+          - prepares files a user can open
+          - groups a user journey into steps
+          - writes files at workspace root
+          - writes workspace files
+          - stages workspace trees
+          - sends terminal input
+          - matches terminal regions
+          - applies terminal configuration
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DeterminateSystems/nix-installer-action@v20
+      - uses: DeterminateSystems/magic-nix-cache-action@v13
+      - name: Build check
+        run: nix build ".#checks.x86_64-linux.\"${{ matrix.check }}\"" --no-link -L
+
+  vm-tests:
+    name: VM / ${{ matrix.check }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        check:
+          - controls a service by name
+          - observes files exposed by the system
+          - observes an HTTP API
+          - observes connectivity between machines
+          - runs behavior as a configured user
+          - controls a declarative container
+          - asserts a saved user-visible result
+          - reports service state
+          - runs machine setup commands
+          - drives a machine terminal
+          - matches machine terminal regions
+          - uses the machine workspace
+          - describes observable machine behavior
+          - supports named machines
+          - asserts saved command results
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DeterminateSystems/nix-installer-action@v20
+      - uses: DeterminateSystems/magic-nix-cache-action@v13
+      - name: Enable VM acceleration
+        run: sudo chmod 666 /dev/kvm
+      - name: Build check
+        run: nix build ".#checks.x86_64-linux.\"${{ matrix.check }}\"" --no-link -L
+
+  graphical-vm-tests:
+    name: VM / ${{ matrix.check }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - signs in through accessible controls
+          - observes a desktop window by its title
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DeterminateSystems/nix-installer-action@v20
+      - uses: DeterminateSystems/magic-nix-cache-action@v13
+      - name: Enable VM acceleration
+        run: sudo chmod 666 /dev/kvm
+      - name: Build check
+        run: nix build ".#checks.x86_64-linux.\"${{ matrix.check }}\"" --no-link -L
