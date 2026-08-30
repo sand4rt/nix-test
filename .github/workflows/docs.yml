@@ -28,11 +28,11 @@ jobs:
           nix run .#generate-docs
           git diff --exit-code -- docs/src/reference
       - name: Build documentation
-        run: nix build .#docs -L
+        run: nix build .#docs --out-link .docs-result -L
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:
-          path: result
+          path: .docs-result
 
   deploy:
     if: github.event_name != 'pull_request'
