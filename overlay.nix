@@ -4,6 +4,24 @@ let
     // (import ./lib/terminal/terminal.nix).actions
     // (import ./lib/terminal/locators.nix);
   workspaceActions = (import ./lib/workspace.nix).actions;
+  /** @doc testers.runTUITest
+  ## `testers.runTUITest`
+
+  ```nix
+  pkgs.testers.runTUITest {
+    name = "example";
+    tests = { test, ... }: [ ];
+    columns = 140;
+    rows = 42;
+    timeout = 15;
+  }
+  ```
+
+  Builds one terminal test derivation. `columns`, `rows`, and `timeout` are
+  optional and default to `140`, `42`, and `15` seconds respectively. Prefer
+  `lib.mkTests` for independent flake checks; use this lower-level API when a
+  single derivation should contain several terminal cases.
+  */
   runTUITest =
     {
         name,
@@ -63,6 +81,15 @@ let
           PYTHONPATH=${runner}/tui_test:${terminal}/tui_test:${workspace}/tui_test:${locators}/tui_test:${expect}/tui_test:$PYTHONPATH python ${runner}/tui_test/runner.py ${script} "$TMPDIR/project"
           touch "$out"
         '';
+  /** @doc testers.testCase
+  ## `testers.testCase`
+
+  ```nix
+  pkgs.testers.testCase name callback
+  ```
+
+  Constructs a named test-case value for callers using the overlay API.
+  */
   testCase = name: callback: {
     inherit name callback;
   };
@@ -72,6 +99,17 @@ in
   testers = prev.testers // {
     tui = runTUITest;
     inherit testCase;
+    /** @doc testers.test
+    ## `testers.test`
+
+    ```nix
+    pkgs.testers.test { type = "tui"; name = "example"; tests = tests; }
+    pkgs.testers.test { type = "nixos"; name = "example"; testScript = testScript; }
+    ```
+
+    Dispatches to the terminal or NixOS test runner. `type` defaults to `"tui"`
+    and may be `"tui"` or `"nixos"`.
+    */
     test = args:
       if (args.type or "tui") == "tui" then
         runTUITest (builtins.removeAttrs args [ "type" "extraPackages" "packages" ])

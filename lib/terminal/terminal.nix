@@ -1,13 +1,48 @@
 {
   actions = {
+    /** @doc terminal.open
+    ## `terminal.open`
+
+    ```nix
+    terminal.open command
+    ```
+
+    Starts `command` in a real pseudo-terminal with the test workspace as its
+    working directory. Only one terminal process is active per test.
+
+    Use `${workspace.path}` in the Nix string to refer to the isolated
+    workspace. The command is split using shell-like quoting, but is executed
+    directly rather than through a shell.
+    */
     open = command: {
       type = "open";
       inherit command;
     };
+    /** @doc terminal.press
+    ## `terminal.press`
+
+    ```nix
+    terminal.press keys
+    ```
+
+    Sends `keys` to the active terminal process. Text is sent literally except
+    for the supported key names: `<leader>`, `<space>`, `<esc>`, `<escape>`,
+    `<enter>`, `<cr>`, `<tab>`, and `<bs>`.
+    */
     press = keys: {
       type = "keys";
       inherit keys;
     };
+    /** @doc terminal.print
+    ## `terminal.print`
+
+    ```nix
+    terminal.print
+    ```
+
+    Prints the current terminal grid to the build log. This is a value, not a
+    function, and is intended for debugging without adding an assertion.
+    */
     print = {
       type = "print";
     };

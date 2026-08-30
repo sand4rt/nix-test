@@ -1,0 +1,18 @@
+[book]
+title = "Nix Tests"
+description = "A declarative testing framework for testing user-facing behavior in Nix"
+authors = ["Nix Tests contributors"]
+language = "en"
+src = "docs/src"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+
+[output.html.search]
+enable = true
+limit-results = 20
+use-boolean-and = true

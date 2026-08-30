@@ -10,16 +10,16 @@ let
   vmExpect = import ./vm/expect.nix;
 in
 {
-  /** Terminal PTY actions and terminal-cell locators. */
+  /** Terminal PTY actions and terminal-cell locators. See the generated API reference. */
   inherit terminal;
 
-  /** Isolated test workspace actions and path. */
+  /** Isolated test workspace actions and path. See the generated API reference. */
   inherit workspace;
 
-  /** NixOS machine configuration actions. */
+  /** NixOS machine configuration actions. See the generated API reference. */
   inherit vm;
 
-  /** Playwright-style assertion factory for terminal and machine targets. */
+  /** Retrying assertion factory for terminal and machine targets. See the generated API reference. */
   expect = target:
     if builtins.isString target then vmExpect target else terminalExpect target;
 }
