@@ -1,4 +1,3 @@
-{ ... }:
 {
   test."controls a declarative container" = { machine, container, expect }: let
     app = container.locate machine "app";

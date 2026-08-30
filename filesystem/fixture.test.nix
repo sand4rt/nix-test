@@ -1,4 +1,3 @@
-{ ... }:
 {
   test."observes files exposed by the system" = { machine, filesystem, expect }: [
     (machine.configure {

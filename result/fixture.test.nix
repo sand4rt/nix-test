@@ -1,4 +1,3 @@
-{ ... }:
 {
   test."asserts a saved user-visible result" = { machine, result, expect }: [
     (machine.configure { })

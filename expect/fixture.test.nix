@@ -1,4 +1,3 @@
-{ ... }:
 {
   test."matches visible terminal behavior" = { terminal, expect }: [
     (terminal.open "printf 'signed in'")

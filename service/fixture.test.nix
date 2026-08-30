@@ -1,4 +1,3 @@
-{ ... }:
 {
   test."controls a service by name" = { machine, service, expect }: [
     (machine.configure {

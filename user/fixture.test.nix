@@ -1,4 +1,3 @@
-{ ... }:
 {
   test."runs behavior as a configured user" = { machine, user, expect }: let
     operator = user.locate machine "operator";
