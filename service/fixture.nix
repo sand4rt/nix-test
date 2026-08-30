@@ -19,14 +19,23 @@ let
 in
 {
   testing.fixtures.service = mkFixture (_fixtures: {
+    /** Start a system or user service once. */
     start = target: operation target "${systemctl target} start ${lib.escapeShellArg target.name}";
+    /** Stop a system or user service once. */
     stop = target: operation target "${systemctl target} stop ${lib.escapeShellArg target.name}";
+    /** Restart a system or user service once. */
     restart = target: operation target "${systemctl target} restart ${lib.escapeShellArg target.name}";
+    /** Reload a system or user service once. */
     reload = target: operation target "${systemctl target} reload ${lib.escapeShellArg target.name}";
+    /** Locate journal output for a service. */
     logs = target: mkLocator {
       type = "serviceLogs";
-      inherit (target) node;
-      command = "journalctl --no-pager -o cat -u ${lib.escapeShellArg target.name}";
+      inherit (target) node scope;
+      command =
+        if target.scope == "system" then
+          "journalctl --no-pager -o cat -u ${lib.escapeShellArg target.name}"
+        else
+          "journalctl --user -M ${lib.escapeShellArg "${target.user}@"} --no-pager -o cat -u ${lib.escapeShellArg target.name}";
       description = "logs for ${target.description}";
     };
   });

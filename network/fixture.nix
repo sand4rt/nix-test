@@ -9,7 +9,11 @@ let
   nodeExpression = name: ''machines[${builtins.toJSON name}]'';
   endpointTarget = node: options:
     let normalized = if builtins.isInt options then { port = options; } else options;
-    in mkLocator {
+    in
+    assert builtins.elem (normalized.transport or "tcp") [ "tcp" "udp" ];
+    assert builtins.isString (normalized.host or "127.0.0.1");
+    assert builtins.isInt normalized.port && normalized.port > 0 && normalized.port <= 65535;
+    mkLocator {
       type = "endpoint";
       inherit node;
       transport = normalized.transport or "tcp";
@@ -26,12 +30,15 @@ let
 in
 {
   testing.fixtures.network = mkFixture (_fixtures: {
+    /** Locate a TCP or UDP endpoint as observed from a machine. */
     endpoint = options: endpointTarget options.from.name (builtins.removeAttrs options [ "from" ]);
+    /** Block traffic between two groups of machines. */
     partition = { left, right }: mkAction "networkPartition" {
       left = map (node: node.name) left;
       right = map (node: node.name) right;
       code = partitionCode "-I" left right;
     };
+    /** Restore traffic between two groups of machines. */
     heal = { left, right }: mkAction "networkHeal" {
       left = map (node: node.name) left;
       right = map (node: node.name) right;

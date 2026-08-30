@@ -122,15 +122,21 @@ let
         description = "container ${containerName}";
       };
       endpoint = {
-        tcp = options: {
+        tcp = options:
+          let
+            host = if builtins.isInt options then "127.0.0.1" else options.host or "127.0.0.1";
+            port = if builtins.isInt options then options else options.port;
+          in
+          assert builtins.isString host;
+          assert builtins.isInt port && port > 0 && port <= 65535;
+          {
           _kind = "locator";
           type = "endpoint";
           node = name;
           transport = "tcp";
-          host = if builtins.isInt options then "127.0.0.1" else options.host or "127.0.0.1";
-          port = if builtins.isInt options then options else options.port;
+          inherit host port;
           description = "TCP endpoint";
-        };
+          };
         udp = options: (makeMachine name).endpoint.tcp options // { transport = "udp"; };
       };
       http = {

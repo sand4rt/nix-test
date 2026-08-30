@@ -36,7 +36,16 @@ in
         def find_element(browser, strategy, value):
             if strategy == "role":
                 role, name = value.split("\0", 1)
-                query = f"//*[@role={json.dumps(role)} and (@aria-label={json.dumps(name)} or normalize-space(.)={json.dumps(name)})]"
+                native_roles = {
+                    "button": "self::button or self::input[@type='button' or @type='submit' or @type='reset']",
+                    "link": "self::a[@href]",
+                    "textbox": "self::textarea or self::input[not(@type) or @type='text' or @type='email' or @type='search' or @type='tel' or @type='url']",
+                }
+                role_query = f"@role={json.dumps(role)}"
+                if role in native_roles:
+                    role_query = f"({role_query} or {native_roles[role]})"
+                name_query = f"(@aria-label={json.dumps(name)} or normalize-space(.)={json.dumps(name)} or @value={json.dumps(name)})"
+                query = f"//*[{role_query} and {name_query}]"
                 return browser.find_element(By.XPATH, query)
             return browser.find_element({
                 "label": By.XPATH,

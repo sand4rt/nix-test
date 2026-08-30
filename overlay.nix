@@ -118,8 +118,12 @@ let
 
 
           def write_file(fixture, action):
-              path = Path(fixture, action["path"])
+              root = Path(fixture).resolve()
+              path = root / action["path"]
               path.parent.mkdir(parents=True, exist_ok=True)
+              resolved = path.resolve()
+              if root not in resolved.parents:
+                  raise ValueError(f"workspace path escapes fixture: {action['path']}")
               path.write_text(action["content"])
 
 
@@ -134,14 +138,23 @@ let
                   path.mkdir(parents=True, exist_ok=True)
               elif action_type == "copyFile":
                   path.parent.mkdir(parents=True, exist_ok=True)
+                  resolved = path.resolve()
+                  if root not in resolved.parents:
+                      raise ValueError(f"workspace path escapes fixture: {action['path']}")
                   shutil.copyfile(action["source"], path)
               elif action_type == "copyTree":
+                  resolved = path.resolve()
+                  if root not in resolved.parents:
+                      raise ValueError(f"workspace path escapes fixture: {action['path']}")
                   shutil.copytree(action["source"], path, dirs_exist_ok=True)
               elif action_type == "symlink":
                   path.parent.mkdir(parents=True, exist_ok=True)
                   path.unlink(missing_ok=True)
                   path.symlink_to(action["target"])
               elif action_type == "setMode":
+                  resolved = path.resolve()
+                  if root not in resolved.parents:
+                      raise ValueError(f"workspace path escapes fixture: {action['path']}")
                   path.chmod(int(action["mode"], 8))
               elif action_type == "removePath":
                   if path.is_dir() and not path.is_symlink():

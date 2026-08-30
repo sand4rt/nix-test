@@ -26,6 +26,10 @@ let
         "--silent"
         "--show-error"
         "--location"
+        "--connect-timeout"
+        "2"
+        "--max-time"
+        "5"
         "--request"
         method
       ]
@@ -38,9 +42,13 @@ let
 in
 {
   testing.fixtures.http = mkFixture (_fixtures: {
+    /** Locate the response to an idempotent GET request. */
     get = node: request: target node "GET" request;
+    /** Locate a JSON response to an idempotent GET request. */
     getJson = node: request: (target node "GET" request) // { type = "httpJsonResponse"; };
+    /** Locate the response to an idempotent request. */
     request = node: method: request: target node method request;
+    /** Send one request once and save its result by name. */
     send = node: request: mkAction "machineResult" {
       node = node.name;
       inherit (request) saveAs;

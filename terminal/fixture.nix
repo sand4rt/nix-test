@@ -124,6 +124,7 @@
                     self.stream.feed(output.decode("utf-8", "replace"))
 
             def open(self, command, fixture, rows, columns):
+                self.close()
                 args = [arg.replace("$fixture", fixture) for arg in shlex.split(command)]
                 self.child = pexpect.spawn(
                     args[0], args[1:], cwd=fixture,
@@ -139,6 +140,7 @@
                     self.child.send("q")
                 if self.child is not None:
                     self.child.close(force=True)
+                    self.child = None
       '';
     };
 }

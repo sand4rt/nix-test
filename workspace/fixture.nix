@@ -9,6 +9,8 @@ let
   validPath =
     path:
     builtins.isString path
+    && path != ""
+    && path != "."
     && !(lib.hasPrefix "/" path)
     && builtins.all (part: part != "..") (lib.splitString "/" path);
   assertPath =
