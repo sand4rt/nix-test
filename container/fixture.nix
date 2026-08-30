@@ -14,9 +14,10 @@ let
 in
 {
   testing.fixtures.container = mkFixture (_fixtures: {
-    locate = node: name: mkLocator {
+    locate = machine: name: mkLocator {
       type = "container";
-      inherit node name;
+      node = machine.name;
+      inherit name;
       description = "container ${name}";
     };
     start = target: operation target "nixos-container start ${lib.escapeShellArg target.name}";
