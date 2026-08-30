@@ -7,6 +7,7 @@
 }:
 let
   builders = import ./builders.nix;
+  terminalInterface = import ../terminal/interface.nix { inherit lib; };
   terminalModule = import ../terminal/fixture.nix {
     inherit lib;
     inherit (builders) mkAction mkFixture;
@@ -35,8 +36,8 @@ let
     inherit (terminalModule.testing.fixtures) terminal;
     inherit (machineModule.testing.fixtures) machine;
     inherit (workspaceModule.testing.fixtures) workspace;
-    expect = builders.mkFixture (fixtures:
-      builtins.mapAttrs (_: factory: factory fixtures) allMatcherFactories
+    expect = builders.mkFixture (
+      fixtures: builtins.mapAttrs (_: factory: factory fixtures) allMatcherFactories
     );
   };
   terminalMatchers = import ../terminal/matchers.nix {
@@ -45,14 +46,15 @@ let
   machineMatchers = import ../machine/matchers.nix {
     inherit (builders) mkAction mkMatcher;
   };
-  builtInMatcherFactories =
-    terminalMatchers.testing.matchers
-    // machineMatchers.testing.matchers;
+  builtInMatcherFactories = terminalMatchers.testing.matchers // machineMatchers.testing.matchers;
   allMatcherFactories = builtInMatcherFactories // matcherFactories;
   allFixtureFactories = builtInFixtureFactories // fixtureFactories;
-  fixtures = builtins.mapAttrs (
-    name: fixture:
-    fixture.factory fixtures // (allLocators.${name} or { })
+  unresolvedFixtures = builtins.mapAttrs (
+    name: fixture: fixture.factory fixtures // (allLocators.${name} or { })
   ) allFixtureFactories;
+  fixtures = unresolvedFixtures // {
+    terminal = terminalInterface.implement "terminal" unresolvedFixtures.terminal;
+    machine = terminalInterface.implement "machine" unresolvedFixtures.machine;
+  };
 in
 fixtures

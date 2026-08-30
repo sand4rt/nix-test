@@ -67,7 +67,7 @@ behavior being tested.
 `terminal.press` accepts literal text and these named keys:
 
 ```text
-<leader> <space> <esc> <escape> <enter> <cr> <tab> <bs>
+<leader> <space> <esc> <escape> <enter> <cr> <c-w> <tab> <bs>
 ```
 
 Use `terminal.print` to include the current grid in the build log.
@@ -92,8 +92,8 @@ test."service starts" = { machine, expect }: [
 - `toEventuallySucceed` retries until success or timeout.
 - `toFail` runs a command once and requires failure.
 
-The machine fixture also exposes the same terminal interaction shape as the
-standalone terminal fixture:
+The machine fixture implements the terminal fixture interface, so the same
+terminal interactions work on either backend:
 
 ```nix
 [

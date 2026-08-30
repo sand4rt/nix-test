@@ -26,8 +26,10 @@ its fixture, locators, assertions, matchers, and colocated tests together under
 `terminal` or `machine`. The workspace fixture lives under `workspace`.
 
 Terminal and machine are registered through the same fixture-factory mechanism
-as user plugins. Built-in fixtures are reserved names, while custom fixtures are
-merged into the same recursive fixture set.
+as user plugins. Both implement the terminal fixture interface; machine extends
+it with NixOS configuration and command operations. Built-in fixtures are
+reserved names, while custom fixtures are merged into the same recursive
+fixture set.
 
 Fixtures, actions, locators, other matcher targets, and matcher factories are
 created with `lib.mkFixture`, `lib.mkAction`, `lib.mkLocator`, `lib.mkTarget`,

@@ -11,6 +11,8 @@ build-dir = "book"
 [output.html]
 default-theme = "navy"
 preferred-dark-theme = "navy"
+additional-css = ["docs/theme/api-tabs.css"]
+additional-js = ["docs/theme/api-tabs.js"]
 
 [output.html.search]
 enable = true

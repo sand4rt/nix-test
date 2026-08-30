@@ -1,8 +1,26 @@
-{ pkgs, builders, mkTests }:
+{
+  pkgs,
+  builders,
+  mkTests,
+}:
 let
   fails = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
   callback = _: [ ];
+  terminalInterface = import ../terminal/interface.nix { inherit (pkgs) lib; };
+  terminalImplementation = {
+    getByRegion = _: { };
+    getByText = _: { };
+    open = _: { };
+    press = _: { };
+    print = { };
+    backendOnly = true;
+  };
 in
+assert (terminalInterface.implement "test" terminalImplementation).backendOnly;
+assert fails (
+  terminalInterface.implement "test" (builtins.removeAttrs terminalImplementation [ "open" ])
+);
+assert fails (terminalInterface.implement "test" (terminalImplementation // { press = { }; }));
 assert fails (mkTests {
   inherit pkgs;
   test = {
@@ -53,10 +71,11 @@ assert fails (mkTests {
   inherit pkgs;
   test.sample = { missingFixture }: [ missingFixture ];
 });
-assert (mkTests {
-  inherit pkgs;
-  test.sample = { terminal }: [ terminal.print ];
-}).sample.type == "derivation";
+assert
+  (mkTests {
+    inherit pkgs;
+    test.sample = { terminal }: [ terminal.print ];
+  }).sample.type == "derivation";
 pkgs.runCommand "nix-testing-mk-tests-unit" { } ''
   touch "$out"
 ''

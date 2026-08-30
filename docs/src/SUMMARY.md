@@ -12,6 +12,5 @@
 - [Architecture](architecture.md)
 - [API Reference](reference/README.md)
   - [Core](reference/core.md)
-  - [Terminal](reference/terminal.md)
-  - [Machine](reference/machine.md)
+  - [Terminal and Machine](reference/terminal.md)
 - [Contributing to the Docs](contributing.md)

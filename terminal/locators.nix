@@ -1,11 +1,24 @@
 { mkLocator, ... }:
 {
   testing.locators.terminal = {
-  /** @doc terminal.getByRegion
-  ## `terminal.getByRegion`
+  /** @doc terminal-machine.getByRegion
+  ## `terminal.getByRegion` / `machine.getByRegion`
+
+  <span class="backend-example" data-backend="terminal"></span>
 
   ```nix
   terminal.getByRegion {
+    left = 0;
+    top = 0;
+    width = 80;
+    height = 10;
+  }
+  ```
+
+  <span class="backend-example" data-backend="machine"></span>
+
+  ```nix
+  machine.getByRegion {
     left = 0;
     top = 0;
     width = 80;
@@ -25,14 +38,23 @@
     height = options.height or null;
   };
 
-  /** @doc terminal.getByText
-  ## `terminal.getByText`
+  /** @doc terminal-machine.getByText
+  ## `terminal.getByText` / `machine.getByText`
+
+  <span class="backend-example" data-backend="terminal"></span>
 
   ```nix
   terminal.getByText text
   ```
 
-  Locates visible terminal text for use with `expect.toBeVisible`.
+  <span class="backend-example" data-backend="machine"></span>
+
+  ```nix
+  machine.getByText text
+  ```
+
+  Locates visible terminal text for use with `expect.toBeVisible` on either
+  backend.
   Matching is literal and may span any visible part of the terminal grid.
   */
     getByText = text: mkLocator {

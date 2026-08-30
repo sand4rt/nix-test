@@ -12,11 +12,6 @@ let
 in
 {
   testing.locators.machine = {
-    /** @doc machine.getByText
-    ## `machine.getByText`
-
-    Locates literal text in the visible machine terminal.
-    */
     getByText = text: mkLocator {
       type = "machineText";
       inherit text;
@@ -38,21 +33,6 @@ in
       );
     };
 
-    /** @doc machine.getByRegion
-    ## `machine.getByRegion`
-
-    ```nix
-    machine.getByRegion {
-      left = 0;
-      top = 0;
-      width = 80;
-      height = 10;
-    }
-    ```
-
-    Selects a rectangular ASCII region from the visible machine terminal for
-    use with `expect.toEqual`.
-    */
     getByRegion = options: mkLocator {
       type = "machineRegion";
       left = options.left or 0;

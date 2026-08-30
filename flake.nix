@@ -9,7 +9,13 @@
   };
 
   outputs =
-    inputs@{ self, nixpkgs, flake-parts, nvf, ... }:
+    inputs@{
+      self,
+      nixpkgs,
+      flake-parts,
+      nvf,
+      ...
+    }:
     let
       moduleConsumer = flake-parts.lib.mkFlake { inherit inputs; } {
         imports = [
@@ -45,10 +51,12 @@
       overlays.default = import ./overlay.nix;
       flakeModules.default = import ./module.nix;
       lib = (import ./core/builders.nix) // {
-        fixtures = { pkgs }: import ./core/fixtures.nix {
-          inherit pkgs;
-          inherit (pkgs) lib;
-        };
+        fixtures =
+          { pkgs }:
+          import ./core/fixtures.nix {
+            inherit pkgs;
+            inherit (pkgs) lib;
+          };
         mkTests = import ./core/mk-tests.nix;
       };
 
@@ -56,15 +64,12 @@
         system: pkgs:
         let
           apiReference = import ./docs/generate-api.nix { inherit (pkgs) lib; };
-          generatedApi = builtins.mapAttrs (
-            name: content: pkgs.writeText "${name}.md" content
-          ) apiReference;
+          generatedApi = builtins.mapAttrs (name: content: pkgs.writeText "${name}.md" content) apiReference;
           generateDocs = pkgs.writeShellApplication {
             name = "generate-docs";
             text = ''
               cp ${generatedApi.core} docs/src/reference/core.md
               cp ${generatedApi.terminal} docs/src/reference/terminal.md
-              cp ${generatedApi.machine} docs/src/reference/machine.md
             '';
           };
           docs = pkgs.stdenvNoCC.mkDerivation {
@@ -76,9 +81,8 @@
             ];
             buildPhase = ''
               runHook preBuild
-              cmp docs/src/reference/core.md ${generatedApi.core}
-              cmp docs/src/reference/terminal.md ${generatedApi.terminal}
-              cmp docs/src/reference/machine.md ${generatedApi.machine}
+               cmp docs/src/reference/core.md ${generatedApi.core}
+               cmp docs/src/reference/terminal.md ${generatedApi.terminal}
               mkdir -p "$out"
               mdbook build --dest-dir "$out"
               runHook postBuild
@@ -92,20 +96,18 @@
         }
       ) nixpkgs.legacyPackages;
 
-      apps = builtins.mapAttrs (
-        system: pkgs:
-        {
-          generate-docs = {
-            type = "app";
-            program = "${self.packages.${system}.generateDocs}/bin/generate-docs";
-            meta.description = "Regenerate the committed API reference";
-          };
-        }
-      ) nixpkgs.legacyPackages;
+      apps = builtins.mapAttrs (system: pkgs: {
+        generate-docs = {
+          type = "app";
+          program = "${self.packages.${system}.generateDocs}/bin/generate-docs";
+          meta.description = "Regenerate the committed API reference";
+        };
+      }) nixpkgs.legacyPackages;
 
       checks = builtins.mapAttrs (
         system: pkgs:
-        moduleConsumer.checks.${system} // {
+        moduleConsumer.checks.${system}
+        // {
           docs = self.packages.${system}.docs;
           builders-unit = import ./core/builders.test.nix {
             inherit pkgs;

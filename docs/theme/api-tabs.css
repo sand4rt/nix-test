@@ -1,0 +1,21 @@
+.backend-tab-list {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.backend-tab-list button {
+  padding: 0.45rem 0.8rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--fg);
+  background: transparent;
+  cursor: pointer;
+}
+
+.backend-tab-list button[aria-selected="true"] {
+  border-bottom-color: var(--links);
+  color: var(--links);
+  font-weight: 600;
+}

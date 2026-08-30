@@ -13,13 +13,15 @@ let
     ../workspace/fixture.nix
   ];
 
-  trimIndent = body:
+  trimIndent =
+    body:
     let
       lines = lib.splitString "\n" body;
       first = lib.findFirst (line: line != "") "" lines;
       match = builtins.match "^( +).*" first;
       indent = if match == null then "" else builtins.head match;
-      strip = line:
+      strip =
+        line:
         if lib.hasPrefix indent line then
           builtins.substring (builtins.stringLength indent) (-1) line
         else
@@ -27,12 +29,14 @@ let
     in
     lib.trim (lib.concatMapStringsSep "\n" strip lines);
 
-  parse = source:
+  parse =
+    source:
     let
       parts = builtins.split "/\\*\\*[[:space:]]*@doc[[:space:]]+([^[:space:]]+)\n" (
         builtins.readFile source
       );
-      consume = rest:
+      consume =
+        rest:
         if builtins.length rest < 2 then
           [ ]
         else
@@ -55,17 +59,19 @@ let
   names = map (entry: entry.name) entries;
   uniqueNames = lib.unique names;
   categories = {
-    core = entry:
+    core =
+      entry:
       entry.name == "test"
       || entry.name == "test.configure"
       || lib.hasPrefix "testing." entry.name
       || lib.hasPrefix "lib." entry.name;
-    terminal = entry:
-      entry.name == "expect.terminal"
+    terminal =
+      entry:
+      entry.name == "expect.terminal-machine"
       || lib.hasPrefix "terminal." entry.name
-      || lib.hasPrefix "workspace." entry.name;
-    machine = entry:
-      entry.name == "expect.machine"
+      || lib.hasPrefix "terminal-machine." entry.name
+      || lib.hasPrefix "workspace." entry.name
+      || entry.name == "expect.machine-command"
       || lib.hasPrefix "machine." entry.name;
   };
   render = title: selected: ''
@@ -79,7 +85,17 @@ let
 
     ${lib.concatStringsSep "\n\n---\n\n" (map (entry: entry.text) selected)}
   '';
-  categorized = lib.concatMap (entry: lib.optional (lib.any (select: select entry) (builtins.attrValues categories)) entry) entries;
+  categorized = lib.concatMap (
+    entry: lib.optional (lib.any (select: select entry) (builtins.attrValues categories)) entry
+  ) entries;
+  terminalEntries =
+    builtins.filter (
+      entry: entry.name == "expect.terminal-machine" || lib.hasPrefix "terminal-machine." entry.name
+    ) entries
+    ++ builtins.filter (
+      entry: entry.name == "expect.machine-command" || lib.hasPrefix "machine." entry.name
+    ) entries
+    ++ builtins.filter (entry: lib.hasPrefix "workspace." entry.name) entries;
 in
 assert lib.assertMsg (entries != [ ]) "No @doc entries found";
 assert lib.assertMsg (
@@ -90,6 +106,5 @@ assert lib.assertMsg (
 ) "Uncategorized @doc entries found";
 {
   core = render "Core API" (builtins.filter categories.core entries);
-  terminal = render "Terminal API" (builtins.filter categories.terminal entries);
-  machine = render "Machine API" (builtins.filter categories.machine entries);
+  terminal = render "Terminal and Machine API" terminalEntries;
 }

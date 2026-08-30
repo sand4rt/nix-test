@@ -7,7 +7,7 @@ let
   makeExpectation = import ./assertions.nix { inherit mkAction; };
 in
 {
-  /** @doc expect.machine
+  /** @doc expect.machine-command
   ## `expect` (machine command)
 
   Machine matchers receive targets created by `machine.command`.
