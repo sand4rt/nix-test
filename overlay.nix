@@ -71,33 +71,39 @@ let
           from workspace import apply_workspace_action
 
 
+          def run_action(action, terminal, fixture, spec):
+              action_type = action["type"]
+              if action_type in {"test", "step"}:
+                  print(f"\n--- {action['name']} ---", flush=True)
+                  for nested in action.get("actions", []):
+                      run_action(nested, terminal, fixture, spec)
+              elif action_type == "writeFile":
+                  write_file(fixture, action)
+              elif action_type in {"makeDirectory", "copyFile", "copyTree", "symlink", "setMode", "removePath"}:
+                  apply_workspace_action(fixture, action)
+              elif action_type == "open":
+                  terminal.open(action["command"], fixture, spec["rows"], spec["columns"])
+              elif action_type == "keys":
+                  terminal.press(action["keys"])
+              elif action_type == "print":
+                  print("\n--- terminal ---")
+                  print(terminal.text())
+                  print("--- end terminal ---", flush=True)
+              elif action_type == "assertRegion":
+                  assert_region(terminal, action, spec["timeout"])
+              elif action_type == "assertText":
+                  assert_text(terminal, action["text"], spec["timeout"])
+              else:
+                  raise ValueError(f"unsupported terminal action: {action_type}")
+
+
           def main():
               actions_path, fixture = sys.argv[1:]
               spec = json.load(open(actions_path))
               terminal = Terminal(spec["columns"], spec["rows"])
               try:
                   for action in spec["testActions"]:
-                      action_type = action["type"]
-                      if action_type == "test":
-                          print(f"\n--- {action['name']} ---", flush=True)
-                      elif action_type == "writeFile":
-                          write_file(fixture, action)
-                      elif action_type in {"makeDirectory", "copyFile", "copyTree", "symlink", "setMode", "removePath"}:
-                          apply_workspace_action(fixture, action)
-                      elif action_type == "open":
-                          terminal.open(action["command"], fixture, spec["rows"], spec["columns"])
-                      elif action_type == "keys":
-                          terminal.press(action["keys"])
-                      elif action_type == "print":
-                          print("\n--- terminal ---")
-                          print(terminal.text())
-                          print("--- end terminal ---", flush=True)
-                      elif action_type == "assertRegion":
-                          assert_region(terminal, action, spec["timeout"])
-                      elif action_type == "assertText":
-                          assert_text(terminal, action["text"], spec["timeout"])
-                      else:
-                          raise ValueError(f"unsupported terminal action: {action_type}")
+                      run_action(action, terminal, fixture, spec)
               finally:
                   terminal.close()
 
