@@ -4,37 +4,81 @@
 Nix test declaration
         |
         v
-action, locator, and assertion values
+recursive fixture set
         |
+        +-- terminal fixture --+
+        |                      +-- terminal fixture interface
+        +-- machine fixture ---+   (open, press, print, getByText, getByRegion)
+        |                          + semantic system-state fixtures
+        +-- named machines -------- per-node modules, actions, and locators
         v
-JSON action document
+ordered action values
         |
-        v
-generated runtime runner
+        +-- no machine.configure --> JSON action document
+        |                           --> pexpect/pyte PTY runner
         |
-        +-- terminal: pexpect, pyte, and a PTY
-        +-- machine: NixOS test driver
+        +-- machine.configure ----> NixOS modules and test-driver script
+                                    --> NixOS test driver
 ```
 
-Nix functions construct serializable action values. Terminal checks encode
-those values as JSON and execute generated Python runtime modules in a
-derivation. Machine checks translate command assertions into a NixOS test
-script.
+Nix functions construct ordered action values. A test containing
+`machine.configure` selects the machine backend; every other test uses the
+standalone terminal backend. Terminal checks encode their actions as JSON and
+execute generated Python runtime modules in a derivation. Machine checks add the
+configured modules to a NixOS test and render the remaining actions into its
+test-driver script.
 
-Test orchestration and plugin resolution live under `core`. Each backend keeps
-its fixture, locators, assertions, matchers, and colocated tests together under
-`terminal` or `machine`. The workspace fixture lives under `workspace`.
+Consequently, a test using any `machine` operation must include
+`machine.configure`, even when it only uses methods from the shared terminal
+interface. Without that action, the test is compiled for the standalone
+terminal runner, which cannot execute machine actions.
+
+Test orchestration and plugin resolution live under `core`. Every built-in
+fixture owns a top-level directory containing its fixture, matchers, locators,
+runtime support, and colocated tests as applicable. `terminal` and `machine`
+provide the two execution boundaries; semantic fixtures such as `service`,
+`filesystem`, `http`, and `browser` build on the machine boundary without being
+implemented inside it.
+
+The built-in fixture directories are:
+
+```text
+browser/     container/   desktop/      expect/
+filesystem/  http/        machine/      network/
+result/      service/     step/         terminal/
+user/        workspace/
+```
+
+`fixture.nix` defines the injected fixture. A fixture directory may additionally
+contain `locators.nix`, `matchers.nix`, runtime modules, and colocated tests.
+`machines` remains in `machine/fixture.nix` because it is the named-node view of
+the same NixOS driver backend, not an independent fixture boundary.
 
 Terminal and machine are registered through the same fixture-factory mechanism
-as user plugins. Both implement the terminal fixture interface; machine extends
-it with NixOS configuration and command operations. Built-in fixtures are
-reserved names, while custom fixtures are merged into the same recursive
-fixture set.
+as user plugins. Fixture factories are evaluated against one recursive fixture
+set, then locators are merged into their owning fixtures. At that boundary,
+both built-in backends are checked for the terminal fixture interface: `open`,
+`press`, `print`, `getByText`, and `getByRegion`. Machine extends that interface
+with NixOS configuration, command assertions, and a pattern locator. Built-in
+fixture names are reserved; custom fixtures join the same recursive set.
+
+The contract specifies the public operation names and whether each operation is
+callable or an action. During evaluation, the framework checks that both
+fixtures provide the required names, that callable operations are functions,
+and that `print` is an action. Each backend still implements observation through
+its native runtime: the standalone backend reads a `pyte` cell grid, while the
+machine backend captures a `tmux` pane through the NixOS test driver.
 
 Fixtures, actions, locators, other matcher targets, and matcher factories are
 created with `lib.mkFixture`, `lib.mkAction`, `lib.mkLocator`, `lib.mkTarget`,
-and `lib.mkMatcher`. Built-ins and plugins use these same constructors, so the
-extension contract is validated during Nix evaluation.
+and `lib.mkMatcher`. These constructors validate value shape and matcher target
+compatibility during Nix evaluation. The terminal fixture interface is an
+internal contract for the two built-in backends; custom fixtures are not
+required to implement it.
+
+Semantic machine locators compile to retrying NixOS driver predicates. Actions
+such as restart, reboot, input, and file staging execute once; only matcher
+observations retry. Named steps compile to nested driver subtests.
 
 This separation keeps test declarations stable while allowing each backend to
 use the runtime best suited to its boundary.

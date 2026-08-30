@@ -12,8 +12,9 @@ editing it directly.
 inputs.tests.lib.mkAction "appOpen" { inherit path; }
 ```
 
-Creates a serializable test action. Custom backends can use it to define
-actions consumed by their runner.
+Creates a typed test action for a runner to consume. Its payload must match
+the selected runner's requirements; terminal-runner actions must be JSON
+serializable.
 
 ---
 
@@ -123,8 +124,8 @@ test.configure = {
 ```
 
 Configures every test declared in the current `perSystem` scope. `timeout`
-controls terminal assertion retries and defaults to 15 seconds. Terminal
-dimensions default to 140 columns by 42 rows.
+controls standalone terminal assertion retries and defaults to 15 seconds.
+Standalone terminal dimensions default to 140 columns by 42 rows.
 
 ---
 

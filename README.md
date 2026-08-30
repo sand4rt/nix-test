@@ -1,4 +1,4 @@
-# ❄️ Nix testing
+# Nix Test
 
 ## Capabilities
 
@@ -17,7 +17,7 @@ Add the input and import its flake-parts module:
 
 ```nix
 {
-  inputs.tests.url = "github:sand4rt/nix-testing";
+  inputs.tests.url = "github:sand4rt/nix-test";
 
   outputs = inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {

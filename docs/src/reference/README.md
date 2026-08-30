@@ -1,6 +1,6 @@
 # API Reference
 
-The generated API reference is grouped by test boundary:
+The generated API reference is grouped by public interface:
 
 - [Core API](core.md) covers test declarations, plugins, and plain-flake usage.
 - [Terminal and Machine API](terminal.md) covers the shared terminal interface,

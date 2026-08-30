@@ -54,6 +54,9 @@ let
           ]
           ++ test.actions
         ) actions;
+        workspaceSources = builtins.concatMap (
+          action: final.lib.optional (action ? source) action.source
+        ) testActions;
         script = final.writeText "${name}-actions.json" (builtins.toJSON {
           inherit testActions;
           inherit columns rows timeout;
@@ -65,6 +68,7 @@ let
           from expect import assert_region, assert_text
           from terminal import Terminal
           from workspace import write_file
+          from workspace import apply_workspace_action
 
 
           def main():
@@ -78,6 +82,8 @@ let
                           print(f"\n--- {action['name']} ---", flush=True)
                       elif action_type == "writeFile":
                           write_file(fixture, action)
+                      elif action_type in {"makeDirectory", "copyFile", "copyTree", "symlink", "setMode", "removePath"}:
+                          apply_workspace_action(fixture, action)
                       elif action_type == "open":
                           terminal.open(action["command"], fixture, spec["rows"], spec["columns"])
                       elif action_type == "keys":
@@ -90,6 +96,8 @@ let
                           assert_region(terminal, action, spec["timeout"])
                       elif action_type == "assertText":
                           assert_text(terminal, action["text"], spec["timeout"])
+                      else:
+                          raise ValueError(f"unsupported terminal action: {action_type}")
               finally:
                   terminal.close()
 
@@ -100,12 +108,40 @@ let
         terminal = final.writeTextDir "tui_test/terminal.py" terminalFixture.runtime;
         workspace = final.writeTextDir "tui_test/workspace.py" /* python */ ''
           from pathlib import Path
+          import shutil
 
 
           def write_file(fixture, action):
               path = Path(fixture, action["path"])
               path.parent.mkdir(parents=True, exist_ok=True)
               path.write_text(action["content"])
+
+
+          def apply_workspace_action(fixture, action):
+              root = Path(fixture).resolve()
+              path = root / action["path"]
+              parent = path.parent.resolve()
+              if root not in parent.parents and parent != root:
+                  raise ValueError(f"workspace path escapes fixture: {action['path']}")
+              action_type = action["type"]
+              if action_type == "makeDirectory":
+                  path.mkdir(parents=True, exist_ok=True)
+              elif action_type == "copyFile":
+                  path.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copyfile(action["source"], path)
+              elif action_type == "copyTree":
+                  shutil.copytree(action["source"], path, dirs_exist_ok=True)
+              elif action_type == "symlink":
+                  path.parent.mkdir(parents=True, exist_ok=True)
+                  path.unlink(missing_ok=True)
+                  path.symlink_to(action["target"])
+              elif action_type == "setMode":
+                  path.chmod(int(action["mode"], 8))
+              elif action_type == "removePath":
+                  if path.is_dir() and not path.is_symlink():
+                      shutil.rmtree(path)
+                  else:
+                      path.unlink(missing_ok=True)
         '';
         locators = final.writeTextDir "tui_test/locators.py" /* python */ ''
           def region(terminal, locator):
@@ -128,6 +164,7 @@ let
               pythonPackages.pyte
             ]))
           ];
+          inherit workspaceSources;
         }
         ''
           export HOME="$TMPDIR/home"

@@ -8,8 +8,8 @@ editing it directly.
 
 ## `expect` (terminal and machine)
 
-Terminal matchers receive locators created by either backend fixture. They
-retry until they pass or the configured timeout expires.
+These matchers receive locators created by either terminal interface
+implementation. They retry until they pass or the active backend times out.
 
 ### `toBeVisible`
 
@@ -47,62 +47,63 @@ expect.toEqual {
 }
 ```
 
-Passes when the selected terminal cells exactly equal `expected`, excluding
-surrounding newlines in the expected Nix multiline string.
+Passes when the selected terminal text equals `expected`. Trailing blank-cell
+whitespace is ignored, as are the surrounding newlines in a Nix multiline
+string.
 
 ---
 
-## `terminal.getByRegion` / `machine.getByRegion`
+## `getByRegion`
 
-<span class="backend-example" data-backend="terminal"></span>
+    <span class="backend-example" data-backend="terminal"></span>
 
-```nix
-terminal.getByRegion {
-  left = 0;
-  top = 0;
-  width = 80;
-  height = 10;
-}
-```
+    ```nix
+    terminal.getByRegion {
+      left = 0;
+      top = 0;
+      width = 80;
+      height = 10;
+    }
+    ```
 
-<span class="backend-example" data-backend="machine"></span>
+    <span class="backend-example" data-backend="machine"></span>
 
-```nix
-machine.getByRegion {
-  left = 0;
-  top = 0;
-  width = 80;
-  height = 10;
-}
-```
+    ```nix
+    machine.getByRegion {
+      left = 0;
+      top = 0;
+      width = 80;
+      height = 10;
+    }
+    ```
 
-Selects a rectangle of terminal cells for use with `expect.toEqual`.
-`left` and `top` default to `0`; `width` and `height` default to the remaining
-visible grid. Coordinates are zero-based.
-
----
-
-## `terminal.getByText` / `machine.getByText`
-
-<span class="backend-example" data-backend="terminal"></span>
-
-```nix
-terminal.getByText text
-```
-
-<span class="backend-example" data-backend="machine"></span>
-
-```nix
-machine.getByText text
-```
-
-Locates visible terminal text for use with `expect.toBeVisible` on either
-backend.
-Matching is literal and may span any visible part of the terminal grid.
+    Selects a rectangle of terminal cells for use with `expect.toEqual`. Trailing
+    blank-cell whitespace is omitted from the selected text.
+    `left` and `top` default to `0`; `width` and `height` default to the remaining
+    visible grid. Coordinates are zero-based.
 
 ---
 
-## `terminal.open` / `machine.open`
+## `getByText`
+
+    <span class="backend-example" data-backend="terminal"></span>
+
+    ```nix
+    terminal.getByText text
+    ```
+
+    <span class="backend-example" data-backend="machine"></span>
+
+    ```nix
+    machine.getByText text
+    ```
+
+    Locates literal text in the visible terminal for use with
+    `expect.toBeVisible` on either backend.
+
+---
+
+## `open`
 
 <span class="backend-example" data-backend="terminal"></span>
 
@@ -116,13 +117,14 @@ terminal.open commandOrPackage
 machine.open commandOrPackage
 ```
 
-Starts a command in a persistent terminal with the test workspace as its
-working directory. Pass a package to run its `meta.mainProgram`, or a string
-for commands with arguments. Only one terminal process is active per test.
+    Starts a command in a persistent terminal with the test workspace as its
+    working directory. Pass a package to run its `meta.mainProgram`, or a command
+    string when arguments are needed. Only one terminal process is active per
+    test.
 
 ---
 
-## `terminal.press` / `machine.press`
+## `press`
 
 <span class="backend-example" data-backend="terminal"></span>
 
@@ -142,7 +144,7 @@ for `<leader>`, `<space>`, `<esc>`, `<escape>`, `<enter>`, `<cr>`, `<c-w>`,
 
 ---
 
-## `terminal.print` / `machine.print`
+## `print`
 
 <span class="backend-example" data-backend="terminal"></span>
 
@@ -174,24 +176,11 @@ expect.toEventuallySucceed (machine.command "test -e /run/example-ready")
 
 ### `toFail`
 
-Runs the command once and requires a non-zero exit status.
+Retries the command until it fails or the NixOS test driver times out.
 
 ```nix
 expect.toFail (machine.command "pgrep forbidden-process")
 ```
-
----
-
-## `machine.command`
-
-```nix
-machine.command "mkdir -p /root/project"
-```
-
-Runs a command once on the NixOS machine, prints its standard output, and
-fails the test on a non-zero exit status. The returned action can also be
-passed to `toEventuallySucceed` or `toFail` when different semantics are
-required.
 
 ---
 
@@ -209,6 +198,10 @@ defaults to an empty list.
 ---
 
 ## `machine.getByPattern`
+
+```nix
+machine.getByPattern "P.*ready"
+```
 
 Locates a regular expression in the visible machine terminal.
 

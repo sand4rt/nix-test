@@ -6,14 +6,16 @@
   ...
 }:
 let
-  session = "nix-testing";
+  session = "nix-test";
   tmux = lib.getExe pkgs.tmux;
-  workspace = "/tmp/nix-testing";
+  workspace = "/tmp/nix-test";
   resolveWorkspace = builtins.replaceStrings [ "$fixture" ] [ workspace ];
+  nodeExpression = name: ''machines[${builtins.toJSON name}]'';
   commandAction =
-    command:
+    node: command:
     mkAction "machineAssertion" {
-      code = "machine.succeed(${builtins.toJSON (resolveWorkspace command)})";
+      inherit node;
+      code = "${nodeExpression node}.succeed(${builtins.toJSON (resolveWorkspace command)})";
     };
   keyNames = {
     "<bs>" = "BSpace";
@@ -27,15 +29,15 @@ let
     "<tab>" = "Tab";
   };
   sendKeys =
-    keys:
+    sessionName: keys:
     lib.concatStringsSep " && " (
       builtins.map
         (
           part:
           if builtins.isList part then
-            "${tmux} send-keys -t ${session} ${keyNames.${builtins.head part}}"
+            "${tmux} send-keys -t ${sessionName} ${keyNames.${builtins.head part}}"
           else
-            "${tmux} send-keys -t ${session} -l -- ${lib.escapeShellArg part}"
+            "${tmux} send-keys -t ${sessionName} -l -- ${lib.escapeShellArg part}"
         )
         (
           builtins.filter (part: part != "") (
@@ -43,9 +45,203 @@ let
           )
         )
     );
+  makeMachine =
+    name:
+    let
+      sessionName = if name == "machine" then session else "${session}-${name}";
+    in
+    {
+      inherit name;
+
+      command =
+        command:
+        let
+          resolved = resolveWorkspace command;
+        in
+        mkAction "machineCommand" {
+          node = name;
+          command = resolved;
+          description = "command on ${name}";
+          code = ''print(${nodeExpression name}.succeed(${builtins.toJSON resolved}), end="")'';
+        };
+
+      run =
+        {
+          command,
+          saveAs,
+        }:
+        let resolved = resolveWorkspace command;
+        in mkAction "machineResult" {
+          node = name;
+          inherit saveAs;
+          command = resolved;
+          code = ''results[${builtins.toJSON saveAs}] = ${nodeExpression name}.execute(${builtins.toJSON resolved})'';
+        };
+
+      service = serviceName: {
+        _kind = "locator";
+        type = "service";
+        node = name;
+        name = serviceName;
+        scope = "system";
+        description = "system service ${serviceName}";
+      };
+      userService = user: serviceName: {
+        _kind = "locator";
+        type = "service";
+        node = name;
+        name = serviceName;
+        scope = "user";
+        inherit user;
+        description = "user service ${serviceName}";
+      };
+      path = path: {
+        _kind = "locator";
+        type = "path";
+        node = name;
+        path = resolveWorkspace path;
+        kind = "path";
+        description = "path ${path}";
+      };
+      file = path: (makeMachine name).path path // { kind = "file"; };
+      directory = path: (makeMachine name).path path // { kind = "directory"; };
+      symlink = path: (makeMachine name).path path // { kind = "symlink"; };
+      mount = path: (makeMachine name).path path // { kind = "mount"; };
+      user = userName: {
+        _kind = "locator";
+        type = "user";
+        node = name;
+        name = userName;
+        description = "user ${userName}";
+      };
+      container = containerName: {
+        _kind = "locator";
+        type = "container";
+        node = name;
+        name = containerName;
+        description = "container ${containerName}";
+      };
+      endpoint = {
+        tcp = options: {
+          _kind = "locator";
+          type = "endpoint";
+          node = name;
+          transport = "tcp";
+          host = if builtins.isInt options then "127.0.0.1" else options.host or "127.0.0.1";
+          port = if builtins.isInt options then options else options.port;
+          description = "TCP endpoint";
+        };
+        udp = options: (makeMachine name).endpoint.tcp options // { transport = "udp"; };
+      };
+      http = {
+        get = request: {
+          _kind = "locator";
+          type = "httpResponse";
+          node = name;
+          method = "GET";
+          url = if builtins.isString request then request else request.url;
+          headers = if builtins.isString request then { } else request.headers or { };
+          body = if builtins.isString request then null else request.body or null;
+          description = "HTTP GET";
+        };
+      };
+
+      getByText = text: {
+        _kind = "locator";
+        type = "machineText";
+        node = name;
+        inherit text;
+        toBeVisible = mkAction "machineAssertion" {
+          node = name;
+          code = ''${nodeExpression name}.wait_until_succeeds(${builtins.toJSON (
+            "${tmux} capture-pane -p -t ${sessionName} | grep -F -- ${lib.escapeShellArg text}"
+          )})'';
+        };
+      };
+      getByPattern = pattern: {
+        _kind = "locator";
+        type = "machinePattern";
+        node = name;
+        inherit pattern;
+        toBeVisible = mkAction "machineAssertion" {
+          node = name;
+          code = ''${nodeExpression name}.wait_until_succeeds(${builtins.toJSON (
+            "${tmux} capture-pane -p -t ${sessionName} | grep -E -- ${lib.escapeShellArg pattern}"
+          )})'';
+        };
+      };
+      getByRegion =
+        options:
+        let
+          top = options.top or 0;
+          left = options.left or 0;
+          height = options.height or null;
+          width = options.width or null;
+          select = lib.concatStringsSep " | " (
+            [ "${tmux} capture-pane -p -t ${sessionName}" ]
+            ++ lib.optional (top > 0) "tail -n +${toString (top + 1)}"
+            ++ lib.optional (height != null) "head -n ${toString height}"
+            ++ lib.optional (left > 0) "cut -c ${toString (left + 1)}-"
+            ++ lib.optional (width != null) "cut -c 1-${toString width}"
+            ++ [ "sed 's/[[:space:]]*$//'" ]
+          );
+        in
+        {
+          _kind = "locator";
+          type = "machineRegion";
+          node = name;
+          inherit left top width height;
+          toEqual = expected:
+            let
+              normalized = lib.removeSuffix "\n" (lib.removePrefix "\n" expected);
+              command = "test \"$(${select})\" = ${lib.escapeShellArg normalized}";
+            in
+            mkAction "machineAssertion" {
+              node = name;
+              code = ''${nodeExpression name}.wait_until_succeeds(${builtins.toJSON command})'';
+            };
+        };
+
+      start = mkAction "machineLifecycle" {
+        node = name;
+        operation = "start";
+        code = "${nodeExpression name}.start()";
+      };
+      shutdown = mkAction "machineLifecycle" {
+        node = name;
+        operation = "shutdown";
+        code = "${nodeExpression name}.shutdown()";
+      };
+      reboot = mkAction "machineLifecycle" {
+        node = name;
+        operation = "reboot";
+        code = "${nodeExpression name}.reboot()";
+      };
+      crash = mkAction "machineLifecycle" {
+        node = name;
+        operation = "crash";
+        code = "${nodeExpression name}.crash()";
+      };
+
+      open =
+        command:
+        let
+          executable = resolveWorkspace (if builtins.isString command then command else lib.getExe command);
+        in
+        commandAction name (
+          "mkdir -p ${workspace}"
+          + " && ${tmux} new-session -d -x 140 -y 42 -c ${workspace} -s ${sessionName} "
+          + lib.escapeShellArg executable
+        );
+      press = keys: commandAction name (sendKeys sessionName keys);
+      print = mkAction "machineAssertion" {
+        node = name;
+        code = "print(${nodeExpression name}.succeed(${builtins.toJSON "${tmux} capture-pane -p -t ${sessionName}"}))";
+      };
+    };
 in
 {
-  testing.fixtures.machine = mkFixture (_fixtures: {
+  testing.fixtures.machine = mkFixture (_fixtures: (makeMachine "machine") // {
     /**
       @doc machine.configure
       ## `machine.configure`
@@ -62,45 +258,18 @@ in
     configure =
       options:
       mkAction "machineConfigure" {
-        modules = [
-          { environment.systemPackages = [ pkgs.tmux ]; }
-        ]
-        ++ (options.modules or [ ]);
+        nodes.machine.modules = options.modules or [ ];
       };
+  });
 
-    /**
-      @doc machine.command
-      ## `machine.command`
-
-      ```nix
-      machine.command "mkdir -p /root/project"
-      ```
-
-      Runs a command once on the NixOS machine, prints its standard output, and
-      fails the test on a non-zero exit status. The returned action can also be
-      passed to `toEventuallySucceed` or `toFail` when different semantics are
-      required.
-    */
-    command =
-      command:
-      mkAction "machineCommand" {
-        inherit command;
-        code = ''print(machine.succeed(${builtins.toJSON (resolveWorkspace command)}), end="")'';
+  testing.fixtures.machines = mkFixture (_fixtures: {
+    node = makeMachine;
+    configure =
+      nodes:
+      mkAction "machineConfigure" {
+        nodes = builtins.mapAttrs (_: options: {
+          modules = options.modules or [ ];
+        }) nodes;
       };
-
-    open =
-      command:
-      let
-        executable = resolveWorkspace (if builtins.isString command then command else lib.getExe command);
-      in
-      commandAction (
-        "${tmux} new-session -d -x 140 -y 50 -s ${session} " + lib.escapeShellArg executable
-      );
-
-    press = keys: commandAction (sendKeys keys);
-
-    print = mkAction "machineAssertion" {
-      code = "print(machine.succeed(${builtins.toJSON "${tmux} capture-pane -p -t ${session}"}))";
-    };
   });
 }

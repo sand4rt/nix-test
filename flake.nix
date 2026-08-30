@@ -73,7 +73,7 @@
             '';
           };
           docs = pkgs.stdenvNoCC.mkDerivation {
-            pname = "nix-tests-docs";
+            pname = "nix-test-docs";
             version = "0.1.0";
             src = self;
             nativeBuildInputs = [

@@ -1,6 +1,6 @@
-# Nix Tests
+# Nix Test
 
-Nix Tests is a declarative framework for testing user-facing behavior in Nix.
+Nix Test is a declarative framework for testing user-facing behavior in Nix.
 
 Tests exercise observable behavior through focused fixtures. Each case becomes
 an ordinary Nix derivation that can be exposed as a flake check.
@@ -17,7 +17,7 @@ Start with [Getting Started](getting-started.md), then use the generated
 
 ## Fixtures
 
-### Terminal Fixture
+### Terminal
 
 The `terminal` fixture tests command-line and terminal applications through a
 real pseudo-terminal. It can launch programs, send keyboard input, locate
@@ -26,32 +26,42 @@ visible text, and select exact terminal-cell regions.
 Use it when the behavior under test is visible to someone interacting with a
 terminal application.
 
-[Use the terminal fixture](fixtures.md#terminal-fixture)
+[Use Terminal](fixtures.md#terminal)
 
-### Machine Fixture
+### Machine
 
 The `machine` fixture tests complete NixOS machines through the NixOS test
-driver. It can configure the machine and assert command results, including
-commands that must eventually succeed.
+driver. It implements the terminal fixture interface and extends it with
+machine configuration and command assertions, including commands that must
+eventually succeed or fail.
 
 Use it when the behavior depends on services, users, permissions, networking,
-or the interaction between multiple parts of a NixOS configuration.
+or the interaction between multiple parts of a NixOS configuration. Every
+machine test includes `machine.configure`, which selects the machine backend.
 
-[Use the machine fixture](fixtures.md#machine-fixture)
+[Use Machine](fixtures.md#machine)
 
-### Workspace Fixture
+### Observable System State
+
+Semantic service, filesystem, endpoint, HTTP, user, and container locators
+describe what users and administrators can observe. Their matchers retry
+automatically, without public `waitFor*` operations.
+
+[Use semantic machine fixtures](fixtures.md#observable-system-state)
+
+### Workspace
 
 The `workspace` fixture provides an isolated directory and mutable test files
-for terminal tests.
+for terminal and machine tests.
 
-[Use the workspace fixture](fixtures.md#workspace-fixture)
+[Use Workspace](fixtures.md#workspace)
 
-### Expect Fixture
+### Expect
 
 The `expect` fixture creates assertions for terminal locators and machine
 commands. Retrying matchers synchronize tests with observable behavior.
 
-[Use the expect fixture](fixtures.md#expect-fixture)
+[Use Expect](fixtures.md#expect)
 
 ## Plugins
 
@@ -61,8 +71,8 @@ locators, assertions, and other fixtures behind a small interface, then be
 merged into the fixture set passed to each test.
 
 Use custom fixtures to express your application's vocabulary and keep repeated
-setup out of individual tests. New execution backends can also be added by
-extending the framework with their own actions and runner.
+setup out of individual tests. Custom actions must be understood by the
+selected built-in runner.
 
 [Create fixture plugins](fixtures.md#plugins)
 

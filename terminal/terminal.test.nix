@@ -24,6 +24,22 @@
       (expect.toBeVisible (terminal.getByText "workspace ready"))
     ];
 
+  test."stages workspace trees" =
+    {
+      terminal,
+      workspace,
+      expect,
+    }:
+    [
+      (workspace.makeDirectory "nested")
+      (workspace.copyFile ./terminal.test.nix "nested/source.nix")
+      (workspace.symlink "nested/source.nix" "source-link.nix")
+      (workspace.setMode "nested/source.nix" "0600")
+      (workspace.remove "source-link.nix")
+      (terminal.open "${pkgs.coreutils}/bin/stat -c '%a %n' nested/source.nix")
+      (expect.toBeVisible (terminal.getByText "600 nested/source.nix"))
+    ];
+
   test."sends terminal input" = { terminal, expect }: [
     (terminal.open (
       pkgs.writeShellApplication {

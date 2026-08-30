@@ -1,11 +1,11 @@
 # Getting Started
 
-Nix Tests turns each named test into a flake check. Tests are ordinary attribute
+Nix Test turns each named test into a flake check. Tests are ordinary attribute
 sets, so they can be declared inline, imported from files, and merged with `//`.
 
 ## Flake-parts
 
-Add Nix Tests as an input and import its module:
+Add Nix Test as an input and import its module:
 
 ```nix
 {
@@ -14,7 +14,7 @@ Add Nix Tests as an input and import its module:
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     tests = {
-      url = "github:sand4rt/nix-testing";
+      url = "github:sand4rt/nix-test";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-parts.follows = "flake-parts";
     };
@@ -54,8 +54,8 @@ test.configure = {
 };
 ```
 
-All fields are optional. The defaults are a 15-second assertion timeout and a
-terminal measuring 140 columns by 42 rows.
+All fields are optional. For the standalone terminal backend, the defaults are a
+15-second assertion timeout and a terminal measuring 140 columns by 42 rows.
 
 ## Plain Flakes
 
@@ -105,9 +105,8 @@ When no arguments are needed, pass the package itself:
 terminal.open config.packages.default
 ```
 
-`terminal.open` resolves the package's `meta.mainProgram` with `lib.getExe`.
-Use a command string when arguments are needed, as in the version example
-above.
+`terminal.open` resolves the package's `meta.mainProgram` with `lib.getExe`. Use
+a command string when arguments are needed, as in the version example above.
 
 Use `lib.getExe'` when the binary name differs from the package's main program:
 
@@ -137,7 +136,8 @@ dependencies should use `terminal.open package` or explicit store paths, not
 
 ## NixOS Modules
 
-Pass NixOS modules to `machine.configure`. Commands run on the resulting machine:
+Use `machine.configure` to select the machine backend and pass any NixOS
+modules. Commands run on the resulting machine:
 
 ```nix
 test."starts the service" = { machine, expect }: [
@@ -153,7 +153,16 @@ test."starts the service" = { machine, expect }: [
 ```
 
 Use machine tests for services, users, permissions, networking, and interactions
-between NixOS modules.
+between NixOS modules. Include `(machine.configure { })` when no additional
+modules are needed.
+
+Use retrying command assertions for asynchronous state:
+
+```nix
+(expect.toEventuallySucceed (machine.command "systemctl is-active my-service.service"))
+(expect.toEventuallySucceed (machine.command "test -e /run/my-service/ready"))
+(expect.toFail (machine.command "test -e /run/my-service/starting"))
+```
 
 ## Home Manager Modules
 

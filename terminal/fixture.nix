@@ -9,7 +9,7 @@
     (mkFixture (_fixtures: {
       /**
         @doc terminal-machine.open
-        ## `terminal.open` / `machine.open`
+        ## `open`
 
         <span class="backend-example" data-backend="terminal"></span>
 
@@ -23,9 +23,10 @@
         machine.open commandOrPackage
         ```
 
-        Starts a command in a persistent terminal with the test workspace as its
-        working directory. Pass a package to run its `meta.mainProgram`, or a string
-        for commands with arguments. Only one terminal process is active per test.
+    Starts a command in a persistent terminal with the test workspace as its
+    working directory. Pass a package to run its `meta.mainProgram`, or a command
+    string when arguments are needed. Only one terminal process is active per
+    test.
       */
       open =
         command:
@@ -35,7 +36,7 @@
 
       /**
         @doc terminal-machine.press
-        ## `terminal.press` / `machine.press`
+        ## `press`
 
         <span class="backend-example" data-backend="terminal"></span>
 
@@ -57,7 +58,7 @@
 
       /**
         @doc terminal-machine.print
-        ## `terminal.print` / `machine.print`
+        ## `print`
 
         <span class="backend-example" data-backend="terminal"></span>
 

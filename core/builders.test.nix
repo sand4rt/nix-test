@@ -31,6 +31,6 @@ assert target == {
 };
 assert (matcher { } locator).type == "sampleAssertion";
 assert fails (matcher { } target);
-pkgs.runCommand "nix-testing-builders-unit" { } ''
+pkgs.runCommand "nix-test-builders-unit" { } ''
   touch "$out"
 ''

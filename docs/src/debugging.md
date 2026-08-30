@@ -15,8 +15,9 @@ Add `terminal.print` after an action to inspect the current terminal grid:
 ]
 ```
 
-Terminal assertion failures include the expected value, the observed locator
-value, and the full visible terminal state. Inspect a previous build log with:
+Terminal text failures include the missing text and visible terminal state.
+Region failures also include the expected and observed regions. Inspect a
+previous build log with:
 
 ```sh
 nix log /nix/store/<test-derivation>
@@ -24,12 +25,13 @@ nix log /nix/store/<test-derivation>
 
 ## Avoid Sleeps
 
-Assertions already retry until the test timeout. Synchronize on visible state:
+Visible terminal assertions retry until their backend times out. Synchronize on
+visible state:
 
 ```nix
 expect.toBeVisible (terminal.getByText "ready")
 ```
 
-For machine tests, use `machine.command` for one-shot commands and
-`toEventuallySucceed` when the state changes asynchronously. Command stdout is
-printed in the test log.
+For machine tests, use `machine.command` directly for one-shot commands and
+`toEventuallySucceed` when the state changes asynchronously. Direct
+`machine.command` actions print their standard output in the test log.

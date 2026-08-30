@@ -1,7 +1,7 @@
 [book]
-title = "Nix Tests"
+title = "Nix Test"
 description = "A declarative testing framework for testing user-facing behavior in Nix"
-authors = ["Nix Tests contributors"]
+authors = ["Nix Test contributors"]
 language = "en"
 src = "docs/src"
 

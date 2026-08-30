@@ -11,6 +11,26 @@ let
     ../machine/locators.nix
     ../machine/matchers.nix
     ../workspace/fixture.nix
+    ../expect/fixture.nix
+    ../browser/fixture.nix
+    ../browser/matchers.nix
+    ../container/fixture.nix
+    ../container/matchers.nix
+    ../desktop/fixture.nix
+    ../desktop/matchers.nix
+    ../filesystem/fixture.nix
+    ../filesystem/matchers.nix
+    ../http/fixture.nix
+    ../http/matchers.nix
+    ../network/fixture.nix
+    ../network/matchers.nix
+    ../result/fixture.nix
+    ../result/matchers.nix
+    ../service/fixture.nix
+    ../service/matchers.nix
+    ../step/fixture.nix
+    ../user/fixture.nix
+    ../user/matchers.nix
   ];
 
   trimIndent =

@@ -1,6 +1,6 @@
 # Fixtures
 
-Fixtures are the interfaces available to a test callback. Nix Tests provides
+Fixtures are the interfaces available to a test callback. Nix Test provides
 four built-ins: `terminal`, `machine`, `workspace`, and `expect`.
 
 Declare only the fixtures a test uses. The framework passes that exact subset,
@@ -16,7 +16,7 @@ test."shows ready" = { terminal, expect }: [
 ];
 ```
 
-## Terminal Fixture
+## Terminal
 
 `terminal` drives a real pseudo-terminal and observes its terminal-cell grid.
 Use it for command-line and terminal applications.
@@ -72,7 +72,7 @@ behavior being tested.
 
 Use `terminal.print` to include the current grid in the build log.
 
-## Machine Fixture
+## Machine
 
 `machine` configures a complete NixOS test machine. Use it for services, users,
 permissions, networking, and module interactions.
@@ -90,13 +90,14 @@ test."service starts" = { machine, expect }: [
 
 - `machine.command` runs once, prints stdout, and fails on a non-zero exit.
 - `toEventuallySucceed` retries until success or timeout.
-- `toFail` runs a command once and requires failure.
+- `toFail` retries until the command fails or the driver times out.
 
 The machine fixture implements the terminal fixture interface, so the same
 terminal interactions work on either backend:
 
 ```nix
 [
+  (machine.configure { })
   (machine.open "nvim flake.nix")
   (machine.press ":Neotest summary")
   (machine.press "<enter>")
@@ -106,11 +107,19 @@ terminal interactions work on either backend:
 ```
 
 Use this form when the application needs a complete NixOS environment or a
-running Nix daemon.
+running Nix daemon. Every machine test must include `machine.configure`, even
+when no additional NixOS modules are required; that action selects the machine
+backend.
 
-## Workspace Fixture
+The fixture intentionally exposes a behavior-oriented subset of the
+[NixOS test driver](https://nixos.org/manual/nixos/stable/#sec-nixos-tests).
+Interactive driver consoles, QEMU monitor commands, fault injection, and raw
+host-to-guest copying are not part of the declarative fixture API.
 
-`workspace` provides an isolated mutable directory for terminal tests:
+## Workspace
+
+`workspace` provides an isolated mutable directory for terminal and machine
+tests:
 
 ```nix
 [
@@ -120,9 +129,116 @@ running Nix daemon.
 ```
 
 `workspace.path` is a runtime placeholder. Pass packages directly to
-`terminal.open`, or use `lib.getExe` in command strings that include arguments.
+`terminal.open` or `machine.open`, or use `lib.getExe` in command strings that
+include arguments.
 
-## Expect Fixture
+Workspace also provides `makeDirectory`, `copyFile`, `copyTree`, `symlink`,
+`setMode`, and `remove`. Paths are relative to the isolated workspace; absolute
+paths and parent traversal are rejected during Nix evaluation.
+
+## Observable System State
+
+Machine locators describe state. Matchers repeatedly observe that state until it
+matches or the timeout expires; actions execute once.
+
+```nix
+let app = machine.service "example.service"; in [
+  (expect.toBeActive app)
+  (expect.toExist (machine.file "/run/example-ready"))
+  (expect.toHaveContent (machine.file "/run/example-state") "ready")
+  (expect.toBeReachable (machine.endpoint.tcp 8080))
+  (expect.toHaveStatus 200 (machine.http.get "http://localhost:8080/health"))
+  (service.restart app)
+]
+```
+
+Service actions are `start`, `stop`, `restart`, and `reload`. Service matchers
+include `toBeActive`, `toBeInactive`, `toBeFailed`, and `toHaveLog`.
+
+Filesystem matchers include `toExist`, `toBeAbsent`, `toBeFile`,
+`toBeDirectory`, `toBeSymlink`, `toBeMounted`, `toHaveContent`, `toPointTo`,
+`toHaveMode`, and `toBeOwnedBy`.
+
+Endpoint matchers are `toBeReachable` and `toBeUnreachable`. HTTP matchers
+include `toHaveStatus`, `toHaveBody`, `toHaveHeader`, and `toHaveJsonValue`.
+
+Users support `toExist`, `toBeAbsent`, `toBeMemberOf`, and `user.run`.
+Containers support `start`, `stop`, `restart`, `run`, `toBeRunning`, and
+`toBeStopped`.
+
+## Saved Results
+
+Use a one-shot action when a command or mutating request must execute exactly
+once, then assert its saved result without repeating the side effect:
+
+```nix
+[
+  (machine.run {
+    command = "example create";
+    saveAs = "create";
+  })
+  (expect.toHaveExitCode 0 (result.command "create"))
+  (expect.toContainStdout (result.stdout "create") "created")
+]
+```
+
+`http.send` similarly accepts `method`, `url`, `headers`, `body`, and `saveAs`.
+Saved results provide `toHaveExitCode`, `toHaveStdout`, and `toContainStdout`.
+Unlike observable-state matchers, saved-result assertions do not retry the
+original action.
+
+## Named Machines
+
+```nix
+test."client observes server" = { machines, expect }: let
+  server = machines.node "server";
+  client = machines.node "client";
+in [
+  (machines.configure {
+    server.modules = [ serverModule ];
+    client.modules = [ clientModule ];
+  })
+  (expect.toBeActive (server.service "example.service"))
+  (expect.toSucceed (client.command "example-client server"))
+]
+```
+
+Named machines expose the same command, terminal, service, filesystem,
+endpoint, HTTP, user, and container APIs, plus `start`, `shutdown`, `reboot`,
+and `crash`. `network.partition` and `network.heal` express partitions between
+groups of named nodes.
+
+## Steps
+
+Use `step` to add nested diagnostic names:
+
+```nix
+(step "service becomes usable" [
+  (expect.toBeActive (machine.service "example.service"))
+  (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
+])
+```
+
+## Browser And Desktop
+
+The browser fixture favors accessibility-oriented locators:
+
+```nix
+let button = browser.getByRole machine "button" { name = "Sign in"; }; in [
+  (machine.configure { })
+  (browser.configure machine)
+  (browser.open machine "http://localhost/")
+  (browser.fill (browser.getByLabel machine "Username") "example")
+  (browser.click button)
+  (expect.toBeVisible button)
+]
+```
+
+Browser locators include role, label, placeholder, text, and title. Desktop
+tests use `desktop.getByWindow` or `desktop.getByText`, plus keyboard, text, and
+screenshot actions. These observations also retry through `expect.toBeVisible`.
+
+## Expect
 
 `expect` exposes Nix-style matcher functions:
 
@@ -141,7 +257,7 @@ named attribute set so argument meaning remains clear.
 Plugins add application-specific fixtures and matchers through mergeable
 flake-parts options. Tests consume the additions exactly like built-ins.
 
-### Custom Fixture
+### Custom Fixtures
 
 ```nix
 testing.fixtures.app = inputs.tests.lib.mkFixture (_fixtures: {
@@ -193,7 +309,7 @@ testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
 ```
 
 `mkMatcher` validates the target before running the matcher. `mkAction` creates
-the serializable action consumed by a custom backend. The matcher becomes
+a typed action for the selected built-in runner to consume. The matcher becomes
 available on `expect`:
 
 ```nix
