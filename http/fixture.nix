@@ -8,11 +8,12 @@
 }:
 let
   nodeExpression = name: ''machines[${builtins.toJSON name}]'';
-  target = node: method: request:
+  target = machine: method: request:
     let options = if builtins.isString request then { url = request; } else request;
     in mkLocator {
       type = "httpResponse";
-      inherit node method;
+      node = machine.name;
+      inherit method;
       url = options.url;
       headers = options.headers or { };
       body = options.body or null;
