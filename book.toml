@@ -11,6 +11,8 @@ build-dir = "book"
 [output.html]
 default-theme = "navy"
 preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/sand4rt/nix-test"
+git-repository-icon = "fab-github"
 additional-css = ["docs/theme/api-tabs.css"]
 additional-js = ["docs/theme/api-tabs.js"]
 

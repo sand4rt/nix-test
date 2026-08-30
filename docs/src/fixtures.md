@@ -1,7 +1,8 @@
 # Fixtures
 
-Fixtures are the interfaces available to a test callback. Nix Test provides
-four built-ins: `terminal`, `machine`, `workspace`, and `expect`.
+Fixtures are the interfaces available to a test callback. Built-ins cover
+terminals, NixOS machines, workspaces, services, filesystems, networking, HTTP,
+users, containers, browsers, desktops, saved results, and expectations.
 
 Declare only the fixtures a test uses. The framework passes that exact subset,
 so strict callback argument sets do not need `...`.
@@ -78,19 +79,19 @@ Use `terminal.print` to include the current grid in the build log.
 permissions, networking, and module interactions.
 
 ```nix
-test."service starts" = { machine, expect }: [
+test."service starts" = { machine, service, expect }: [
   (machine.configure {
     modules = [ serviceModule ];
   })
-  (machine.command "systemctl start example.service")
-  (expect.toEventuallySucceed (machine.command "systemctl is-active example.service"))
+  (service.start (machine.service "example.service"))
+  (expect.toBeActive (machine.service "example.service"))
   (expect.toFail (machine.command "pgrep forbidden-process"))
 ];
 ```
 
+- Service and other semantic matchers retry until success or timeout.
 - `machine.command` runs once, prints stdout, and fails on a non-zero exit.
-- `toEventuallySucceed` retries until success or timeout.
-- `toFail` retries until the command fails or the driver times out.
+- `toEventuallySucceed` and `toFail` cover commands without semantic locators.
 
 The machine fixture implements the terminal fixture interface, so the same
 terminal interactions work on either backend:

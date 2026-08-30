@@ -276,6 +276,7 @@ builtins.mapAttrs (
     in
     pkgs.testers.runNixOSTest {
       inherit name;
+      skipTypeCheck = true;
       nodes = builtins.mapAttrs (_: options: {
         imports = [
           {
@@ -297,6 +298,7 @@ builtins.mapAttrs (
         results = {}
         try:
           start_all()
+          machines = {machine.name: machine for machine in machines}
           with subtest(${builtins.toJSON name}):
         ${renderActions "    " actions}
         finally:

@@ -40,6 +40,7 @@
               ./user/fixture.test.nix
               ./service/fixture.test.nix
               ./step/fixture.test.nix
+              ./tests/readme.test.nix
               ./workspace/fixture.test.nix
               ./terminal/terminal.test.nix
             ];

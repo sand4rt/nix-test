@@ -15,6 +15,10 @@ test."shows ready" = { terminal, expect }: [
 Start with [Getting Started](getting-started.md), then use the generated
 [API Reference](reference/README.md) for exact signatures and defaults.
 
+When a machine test needs inspection beyond build logs, the [Debugging
+guide](debugging.md) covers the interactive NixOS driver, guest shells, SSH,
+port forwarding, and persistent VM state.
+
 ## Fixtures
 
 ### Terminal

@@ -148,7 +148,7 @@ test."starts the service" = { machine, expect }: [
     ];
   })
 
-  (expect.toEventuallySucceed (machine.command "systemctl is-active my-service.service"))
+  (expect.toBeActive (machine.service "my-service.service"))
 ];
 ```
 
@@ -156,13 +156,17 @@ Use machine tests for services, users, permissions, networking, and interactions
 between NixOS modules. Include `(machine.configure { })` when no additional
 modules are needed.
 
-Use retrying command assertions for asynchronous state:
+Prefer semantic locators for services and files. Their matchers retry until the
+configured timeout:
 
 ```nix
-(expect.toEventuallySucceed (machine.command "systemctl is-active my-service.service"))
-(expect.toEventuallySucceed (machine.command "test -e /run/my-service/ready"))
-(expect.toFail (machine.command "test -e /run/my-service/starting"))
+(expect.toBeActive (machine.service "my-service.service"))
+(expect.toExist (machine.file "/run/my-service/ready"))
+(expect.toBeAbsent (machine.file "/run/my-service/starting"))
 ```
+
+Use `expect.toEventuallySucceed (machine.command command)` when no semantic
+locator describes the public behavior.
 
 ## Home Manager Modules
 
@@ -221,7 +225,7 @@ The test file is a per-system module:
 # src/terminal.test.nix
 { pkgs, ... }:
 {
-    test."shows greeting" = { terminal, expect }: [
+  test."shows greeting" = { terminal, expect }: [
     (terminal.open pkgs.hello)
     (expect.toBeVisible (terminal.getByText "Hello"))
   ];
