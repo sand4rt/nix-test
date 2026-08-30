@@ -26,7 +26,7 @@ let
 in
 {
   testing.fixtures.network = mkFixture (_fixtures: {
-    endpoint = options: endpointTarget options.from.node (builtins.removeAttrs options [ "from" ]);
+    endpoint = options: endpointTarget options.from.name (builtins.removeAttrs options [ "from" ]);
     partition = { left, right }: mkAction "networkPartition" {
       left = map (node: node.name) left;
       right = map (node: node.name) right;

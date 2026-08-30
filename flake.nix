@@ -32,6 +32,7 @@
               ./filesystem/fixture.test.nix
               ./http/fixture.test.nix
               ./machine/fixture.test.nix
+              ./network/fixture.test.nix
               ./service/fixture.test.nix
               ./step/fixture.test.nix
               ./workspace/fixture.test.nix
