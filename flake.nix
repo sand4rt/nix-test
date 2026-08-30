@@ -28,6 +28,7 @@
           { pkgs, ... }:
           {
             imports = [
+              ./expect/fixture.test.nix
               ./machine/fixture.test.nix
               ./terminal/terminal.test.nix
             ];
