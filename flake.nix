@@ -30,6 +30,7 @@
             imports = [
               ./browser/fixture.test.nix
               ./container/fixture.test.nix
+              ./desktop/fixture.test.nix
               ./expect/fixture.test.nix
               ./filesystem/fixture.test.nix
               ./http/fixture.test.nix
