@@ -20,7 +20,7 @@ a flake check.
 ```
 
 Start with [Getting Started](getting-started.md), then use the generated
-[API Reference](reference/api.md) for exact signatures and defaults.
+[API Reference](reference/README.md) for exact signatures and defaults.
 
 ## Principles
 

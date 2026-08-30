@@ -16,11 +16,15 @@
         system: pkgs:
         let
           apiReference = import ./docs/generate-api.nix { inherit (pkgs) lib; };
-          generatedApi = pkgs.writeText "api.md" apiReference;
+          generatedApi = builtins.mapAttrs (
+            name: content: pkgs.writeText "${name}.md" content
+          ) apiReference;
           generateDocs = pkgs.writeShellApplication {
             name = "generate-docs";
             text = ''
-              cp ${generatedApi} docs/src/reference/api.md
+              cp ${generatedApi.core} docs/src/reference/core.md
+              cp ${generatedApi.terminal} docs/src/reference/terminal.md
+              cp ${generatedApi.machine} docs/src/reference/machine.md
             '';
           };
           docs = pkgs.stdenvNoCC.mkDerivation {
@@ -32,7 +36,9 @@
             ];
             buildPhase = ''
               runHook preBuild
-              cmp docs/src/reference/api.md ${generatedApi}
+              cmp docs/src/reference/core.md ${generatedApi.core}
+              cmp docs/src/reference/terminal.md ${generatedApi.terminal}
+              cmp docs/src/reference/machine.md ${generatedApi.machine}
               mkdir -p "$out"
               mdbook build --dest-dir "$out"
               runHook postBuild

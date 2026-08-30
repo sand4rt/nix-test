@@ -59,4 +59,4 @@ nix build '.#checks.aarch64-linux."shows greeting"' --no-link -L
 
 See the [documentation](docs/src/README.md),
 [getting-started guide](docs/src/getting-started.md), and generated
-[API reference](docs/src/reference/api.md) for more information.
+[API reference](docs/src/reference/README.md) for more information.
