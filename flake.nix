@@ -3,14 +3,54 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+  inputs.nvf = {
+    url = "github:NotAShelf/nvf";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
 
   outputs =
-    { self, nixpkgs, ... }:
+    inputs@{ self, nixpkgs, flake-parts, nvf, ... }:
+    let
+      moduleConsumer = flake-parts.lib.mkFlake { inherit inputs; } {
+        imports = [
+          self.flakeModules.default
+          ./core/extensions.test.nix
+          ./tests/neotest-nix.test.nix
+        ];
+        systems = builtins.attrNames nixpkgs.legacyPackages;
+        perSystem =
+          { pkgs, ... }:
+          {
+            imports = [
+              ./machine/fixture.test.nix
+              ./terminal/terminal.test.nix
+            ];
+            test = {
+              configure = {
+                timeout = 20;
+                terminal = {
+                  columns = 100;
+                  rows = 30;
+                };
+              };
+              "interop passes" = { terminal, expect }: [
+                (terminal.open pkgs.hello)
+                (expect.toBeVisible (terminal.getByText "Hello"))
+              ];
+            };
+          };
+      };
+    in
     {
       overlays.default = import ./overlay.nix;
       flakeModules.default = import ./module.nix;
-      lib.fixtures = import ./lib/fixtures.nix;
-      lib.mkTests = args: (import ./lib/mk-tests.nix) args;
+      lib = (import ./core/builders.nix) // {
+        fixtures = { pkgs }: import ./core/fixtures.nix {
+          inherit pkgs;
+          inherit (pkgs) lib;
+        };
+        mkTests = import ./core/mk-tests.nix;
+      };
 
       packages = builtins.mapAttrs (
         system: pkgs:
@@ -47,7 +87,6 @@
           };
         in
         {
-          runner = pkgs.writeText "tui-test-runner.py" (import ./lib/runner.nix);
           inherit docs generateDocs;
           default = docs;
         }
@@ -66,8 +105,17 @@
 
       checks = builtins.mapAttrs (
         system: pkgs:
-        {
+        moduleConsumer.checks.${system} // {
           docs = self.packages.${system}.docs;
+          builders-unit = import ./core/builders.test.nix {
+            inherit pkgs;
+            builders = import ./core/builders.nix;
+          };
+          mk-tests-unit = import ./core/mk-tests.test.nix {
+            inherit pkgs;
+            builders = import ./core/builders.nix;
+            mkTests = self.lib.mkTests;
+          };
         }
       ) nixpkgs.legacyPackages;
     };

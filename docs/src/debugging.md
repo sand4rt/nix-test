@@ -27,8 +27,9 @@ nix log /nix/store/<test-derivation>
 Assertions already retry until the test timeout. Synchronize on visible state:
 
 ```nix
-((expect (terminal.getByText "ready")).toBeVisible)
+expect.toBeVisible (terminal.getByText "ready")
 ```
 
-For machine tests, use `toEventuallySucceed` when the state changes
-asynchronously.
+For machine tests, use `machine.command` for one-shot commands and
+`toEventuallySucceed` when the state changes asynchronously. Command stdout is
+printed in the test log.

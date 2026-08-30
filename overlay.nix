@@ -1,9 +1,15 @@
 final: prev:
 let
-  terminalActions = (import ./lib/terminal/actions.nix)
-    // (import ./lib/terminal/terminal.nix).actions
-    // (import ./lib/terminal/locators.nix);
-  workspaceActions = (import ./lib/workspace.nix).actions;
+  builders = import ./core/builders.nix;
+  fixtures = import ./core/fixtures.nix {
+    pkgs = final;
+    lib = final.lib;
+  };
+  terminalModule = import ./terminal/fixture.nix {
+    lib = final.lib;
+    inherit (builders) mkAction mkFixture;
+  };
+  terminalFixture = terminalModule.testing.fixtures.terminal;
   /** @doc testers.runTUITest
   ## `testers.runTUITest`
 
@@ -35,11 +41,7 @@ let
           inherit columns rows;
           test = name: callback: {
             inherit name;
-            actions = callback {
-              terminal = terminalActions;
-              workspace = workspaceActions;
-              expect = (import ./lib/terminal/expect.nix).make;
-            };
+            actions = callback fixtures;
           };
         };
         testActions = builtins.concatMap (
@@ -52,19 +54,71 @@ let
           ]
           ++ test.actions
         ) actions;
-        packages = builtins.concatMap (action: action.packages) (
-          builtins.filter (action: action.type == "require") testActions
-        );
-        runtimeActions = builtins.filter (action: action.type != "require") testActions;
         script = final.writeText "${name}-actions.json" (builtins.toJSON {
-          testActions = runtimeActions;
+          inherit testActions;
           inherit columns rows timeout;
         });
-        runner = final.writeTextDir "tui_test/runner.py" (import ./lib/runner.nix);
-        terminal = final.writeTextDir "tui_test/terminal.py" (import ./lib/terminal/terminal.nix).runtime;
-        workspace = final.writeTextDir "tui_test/workspace.py" (import ./lib/workspace.nix).runtime;
-        locators = final.writeTextDir "tui_test/locators.py" (import ./lib/terminal/locators.nix).runtime;
-        expect = final.writeTextDir "tui_test/expect.py" (import ./lib/terminal/expect.nix).runtime;
+        runner = final.writeTextDir "tui_test/runner.py" /* python */ ''
+          import json
+          import sys
+
+          from expect import assert_region, assert_text
+          from terminal import Terminal
+          from workspace import write_file
+
+
+          def main():
+              actions_path, fixture = sys.argv[1:]
+              spec = json.load(open(actions_path))
+              terminal = Terminal(spec["columns"], spec["rows"])
+              try:
+                  for action in spec["testActions"]:
+                      action_type = action["type"]
+                      if action_type == "test":
+                          print(f"\n--- {action['name']} ---", flush=True)
+                      elif action_type == "writeFile":
+                          write_file(fixture, action)
+                      elif action_type == "open":
+                          terminal.open(action["command"], fixture, spec["rows"], spec["columns"])
+                      elif action_type == "keys":
+                          terminal.press(action["keys"])
+                      elif action_type == "print":
+                          print("\n--- terminal ---")
+                          print(terminal.text())
+                          print("--- end terminal ---", flush=True)
+                      elif action_type == "assertRegion":
+                          assert_region(terminal, action, spec["timeout"])
+                      elif action_type == "assertText":
+                          assert_text(terminal, action["text"], spec["timeout"])
+              finally:
+                  terminal.close()
+
+
+          if __name__ == "__main__":
+              main()
+        '';
+        terminal = final.writeTextDir "tui_test/terminal.py" terminalFixture.runtime;
+        workspace = final.writeTextDir "tui_test/workspace.py" /* python */ ''
+          from pathlib import Path
+
+
+          def write_file(fixture, action):
+              path = Path(fixture, action["path"])
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(action["content"])
+        '';
+        locators = final.writeTextDir "tui_test/locators.py" /* python */ ''
+          def region(terminal, locator):
+              lines = terminal.text().splitlines()
+              selected = lines[locator["top"]:]
+              selected = [line[locator["left"]:] for line in selected]
+              if locator["height"] is not None:
+                  selected = selected[:locator["height"]]
+              if locator["width"] is not None:
+                  selected = [line[:locator["width"]] for line in selected]
+              return "\n".join(selected).rstrip()
+        '';
+        expect = final.writeTextDir "tui_test/expect.py" (import ./terminal/assertions.nix { inherit (builders) mkAction; }).runtime;
       in
       final.runCommand name
         {
@@ -73,7 +127,7 @@ let
               pythonPackages.pexpect
               pythonPackages.pyte
             ]))
-          ] ++ packages;
+          ];
         }
         ''
           export HOME="$TMPDIR/home"

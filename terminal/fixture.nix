@@ -1,23 +1,26 @@
 {
-  actions = {
+  lib,
+  mkAction,
+  mkFixture,
+  ...
+}:
+{
+  testing.fixtures.terminal = (mkFixture (_fixtures: {
     /** @doc terminal.open
     ## `terminal.open`
 
     ```nix
-    terminal.open command
+    terminal.open commandOrPackage
     ```
 
-    Starts `command` in a real pseudo-terminal with the test workspace as its
-    working directory. Only one terminal process is active per test.
-
-    Use `${workspace.path}` in the Nix string to refer to the isolated
-    workspace. The command is split using shell-like quoting, but is executed
-    directly rather than through a shell.
+    Starts a command in a real pseudo-terminal with the test workspace as its
+    working directory. Pass a package to run its `meta.mainProgram`, or a string
+    for commands with arguments. Only one terminal process is active per test.
     */
-    open = command: {
-      type = "open";
-      inherit command;
+    open = command: mkAction "open" {
+      command = if builtins.isString command then command else lib.getExe command;
     };
+
     /** @doc terminal.press
     ## `terminal.press`
 
@@ -26,32 +29,20 @@
     ```
 
     Sends `keys` to the active terminal process. Text is sent literally except
-    for the supported key names: `<leader>`, `<space>`, `<esc>`, `<escape>`,
-    `<enter>`, `<cr>`, `<tab>`, and `<bs>`.
+    for `<leader>`, `<space>`, `<esc>`, `<escape>`, `<enter>`, `<cr>`, `<tab>`,
+    and `<bs>`.
     */
-    press = keys: {
-      type = "keys";
-      inherit keys;
-    };
+    press = keys: mkAction "keys" { inherit keys; };
+
     /** @doc terminal.print
     ## `terminal.print`
 
-    ```nix
-    terminal.print
-    ```
-
-    Prints the current terminal grid to the build log. This is a value, not a
-    function, and is intended for debugging without adding an assertion.
+    Prints the current terminal grid to the build log.
     */
-    print = {
-      type = "print";
-    };
-  };
-
-  runtime = /* python */ ''
+    print = mkAction "print" { };
+  })) // {
+    runtime = /* python */ ''
     import shlex
-    import shlex
-    import time
 
     import pexpect
     import pyte
@@ -112,5 +103,6 @@
                 self.child.send("q")
             if self.child is not None:
                 self.child.close(force=True)
-  '';
+    '';
+  };
 }

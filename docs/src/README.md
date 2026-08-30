@@ -1,20 +1,15 @@
 # Nix Tests
 
-Nix Tests is a declarative testing framework for testing user-facing behavior
-in Nix. It combines a Playwright-style API with Testing Library's philosophy.
+Nix Tests is a declarative framework for testing user-facing behavior in Nix.
 
 Tests exercise observable behavior through focused fixtures. Each case becomes
 an ordinary Nix derivation that can be exposed as a flake check.
 
 ```nix
-(test "shows ready" (
-  { terminal, workspace, expect, ... }:
-  [
-    (workspace.require [ my-package ])
-    (terminal.open "my-command")
-    ((expect (terminal.getByText "ready")).toBeVisible)
-  ]
-))
+test."shows ready" = { terminal, expect }: [
+  (terminal.open my-package)
+  (expect.toBeVisible (terminal.getByText "ready"))
+];
 ```
 
 Start with [Getting Started](getting-started.md), then use the generated
@@ -35,9 +30,9 @@ terminal application.
 
 ### Machine Fixture
 
-The `vm` fixture tests complete NixOS machines through the NixOS test driver. It
-can configure the machine and assert command results, including commands that
-must eventually succeed.
+The `machine` fixture tests complete NixOS machines through the NixOS test
+driver. It can configure the machine and assert command results, including
+commands that must eventually succeed.
 
 Use it when the behavior depends on services, users, permissions, networking,
 or the interaction between multiple parts of a NixOS configuration.
@@ -46,8 +41,8 @@ or the interaction between multiple parts of a NixOS configuration.
 
 ### Workspace Fixture
 
-The `workspace` fixture provides an isolated directory, test files, and runtime
-packages for terminal tests.
+The `workspace` fixture provides an isolated directory and mutable test files
+for terminal tests.
 
 [Use the workspace fixture](fixtures.md#workspace-fixture)
 
@@ -76,5 +71,5 @@ extending the framework with their own actions and runner.
 - Test through public, user-facing interfaces.
 - Use the fixture that matches the user-facing boundary under test.
 - Retry observable assertions instead of guessing with sleeps.
-- Keep runtime dependencies with the test that needs them.
+- Pass packages directly to `terminal.open` when no arguments are needed.
 - Emit useful terminal state when an assertion fails.

@@ -21,8 +21,18 @@ those values as JSON and execute generated Python runtime modules in a
 derivation. Machine checks translate command assertions into a NixOS test
 script.
 
-Backend-specific implementations live under `lib/terminal` and `lib/vm`.
-Shared test construction and workspace behavior live under `lib`.
+Test orchestration and plugin resolution live under `core`. Each backend keeps
+its fixture, locators, assertions, matchers, and colocated tests together under
+`terminal` or `machine`. The workspace fixture lives under `workspace`.
+
+Terminal and machine are registered through the same fixture-factory mechanism
+as user plugins. Built-in fixtures are reserved names, while custom fixtures are
+merged into the same recursive fixture set.
+
+Fixtures, actions, locators, other matcher targets, and matcher factories are
+created with `lib.mkFixture`, `lib.mkAction`, `lib.mkLocator`, `lib.mkTarget`,
+and `lib.mkMatcher`. Built-ins and plugins use these same constructors, so the
+extension contract is validated during Nix evaluation.
 
 This separation keeps test declarations stable while allowing each backend to
 use the runtime best suited to its boundary.

@@ -8,18 +8,13 @@ editing it directly.
 
 ## `expect` (terminal)
 
-```nix
-expect locator
-```
-
-Creates retrying assertions for a terminal locator. Assertions retry until
-they pass or the test timeout expires, so tests should synchronize on
-observable output instead of using sleeps.
+Terminal matchers receive locators created by the `terminal` fixture. They
+retry until they pass or the configured timeout expires.
 
 ### `toBeVisible`
 
 ```nix
-((expect (terminal.getByText "ready")).toBeVisible)
+expect.toBeVisible (terminal.getByText "ready")
 ```
 
 Passes when the locator's text appears in the visible terminal.
@@ -27,7 +22,10 @@ Passes when the locator's text appears in the visible terminal.
 ### `toEqual`
 
 ```nix
-((expect (terminal.getByRegion region)).toEqual expected)
+expect.toEqual {
+  actual = terminal.getByRegion region;
+  inherit expected;
+}
 ```
 
 Passes when the selected terminal cells exactly equal `expected`, excluding
@@ -46,7 +44,7 @@ terminal.getByRegion {
 }
 ```
 
-Selects a rectangle of terminal cells for use with `expect(...).toEqual`.
+Selects a rectangle of terminal cells for use with `expect.toEqual`.
 `left` and `top` default to `0`; `width` and `height` default to the remaining
 visible grid. Coordinates are zero-based.
 
@@ -58,7 +56,7 @@ visible grid. Coordinates are zero-based.
 terminal.getByText text
 ```
 
-Locates visible terminal text for use with `expect(...).toBeVisible`.
+Locates visible terminal text for use with `expect.toBeVisible`.
 Matching is literal and may span any visible part of the terminal grid.
 
 ---
@@ -66,15 +64,12 @@ Matching is literal and may span any visible part of the terminal grid.
 ## `terminal.open`
 
 ```nix
-terminal.open command
+terminal.open commandOrPackage
 ```
 
-Starts `command` in a real pseudo-terminal with the test workspace as its
-working directory. Only one terminal process is active per test.
-
-Use `${workspace.path}` in the Nix string to refer to the isolated
-workspace. The command is split using shell-like quoting, but is executed
-directly rather than through a shell.
+Starts a command in a real pseudo-terminal with the test workspace as its
+working directory. Pass a package to run its `meta.mainProgram`, or a string
+for commands with arguments. Only one terminal process is active per test.
 
 ---
 
@@ -85,19 +80,14 @@ terminal.press keys
 ```
 
 Sends `keys` to the active terminal process. Text is sent literally except
-for the supported key names: `<leader>`, `<space>`, `<esc>`, `<escape>`,
-`<enter>`, `<cr>`, `<tab>`, and `<bs>`.
+for `<leader>`, `<space>`, `<esc>`, `<escape>`, `<enter>`, `<cr>`, `<tab>`,
+and `<bs>`.
 
 ---
 
 ## `terminal.print`
 
-```nix
-terminal.print
-```
-
-Prints the current terminal grid to the build log. This is a value, not a
-function, and is intended for debugging without adding an assertion.
+Prints the current terminal grid to the build log.
 
 ---
 
@@ -108,19 +98,8 @@ workspace.path
 ```
 
 Placeholder for the test's isolated workspace path. Interpolate it into a
-command passed to `terminal.open`; the runtime replaces it with the actual
-temporary path.
-
----
-
-## `workspace.require`
-
-```nix
-workspace.require packages
-```
-
-Adds the Nix `packages` needed by this test to its runtime environment.
-Keep dependencies with the test that invokes them.
+terminal or machine command; the selected backend replaces it with the
+actual writable path.
 
 ---
 

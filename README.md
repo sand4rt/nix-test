@@ -1,7 +1,4 @@
-# ❄️ Nix Tests
-
-> A declarative framework for testing user-facing behavior in Nix, combining a
-> Playwright-style API with Testing Library's philosophy.
+# ❄️ Nix testing
 
 ## Capabilities
 
@@ -9,7 +6,8 @@
 - Test NixOS behavior through the NixOS test driver.
 - Locate visible terminal text or exact terminal-cell regions.
 - Retry assertions until observable state is ready, without arbitrary sleeps.
-- Create isolated workspaces with test-specific files and runtime packages.
+- Create isolated workspaces with test-specific files.
+- Extend the framework with custom fixtures, locators, and matchers.
 - Expose every test as a regular flake check.
 - Print useful terminal state when an assertion fails.
 
@@ -19,7 +17,7 @@ Add the input and import its flake-parts module:
 
 ```nix
 {
-  inputs.tests.url = "github:example/nix-tests";
+  inputs.tests.url = "github:sand4rt/nix-testing";
 
   outputs = inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
@@ -28,18 +26,10 @@ Add the input and import its flake-parts module:
       perSystem =
         { pkgs, ... }:
         {
-          tests =
-            { test, ... }:
-            [
-              (test "shows greeting" (
-                { terminal, workspace, expect, ... }:
-                [
-                  (workspace.require [ pkgs.hello ])
-                  (terminal.open "hello")
-                  ((expect (terminal.getByText "Hello")).toBeVisible)
-                ]
-              ))
-            ];
+          test."shows greeting" = { terminal, expect }: [
+            (terminal.open pkgs.hello)
+            (expect.toBeVisible (terminal.getByText "Hello"))
+          ];
         };
     };
 }

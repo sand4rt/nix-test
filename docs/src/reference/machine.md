@@ -6,28 +6,16 @@ This reference is generated from documentation beside the public Nix API.
 Edit the corresponding `@doc` block and regenerate this page instead of
 editing it directly.
 
-## `expect` (VM command)
+## `expect` (machine command)
 
-```nix
-expect command
-```
-
-Creates an assertion for `command` on the NixOS test machine.
-
-### `toSucceed`
-
-Runs the command once and requires a successful exit status.
-
-```nix
-(expect "systemctl --user is-active example.service").toSucceed
-```
+Machine matchers receive targets created by `machine.command`.
 
 ### `toEventuallySucceed`
 
-Retries the command using the NixOS test driver until it succeeds or times out.
+Retries the command until it succeeds or times out.
 
 ```nix
-(expect "test -e /run/example-ready").toEventuallySucceed
+expect.toEventuallySucceed (machine.command "test -e /run/example-ready")
 ```
 
 ### `toFail`
@@ -35,19 +23,86 @@ Retries the command using the NixOS test driver until it succeeds or times out.
 Runs the command once and requires a non-zero exit status.
 
 ```nix
-(expect "pgrep forbidden-process").toFail
+expect.toFail (machine.command "pgrep forbidden-process")
 ```
 
 ---
 
-## `vm.configure`
+## `machine.command`
 
 ```nix
-vm.configure {
-  homeModules = [ module ];
+machine.command "mkdir -p /root/project"
+```
+
+Runs a command once on the NixOS machine, prints its standard output, and
+fails the test on a non-zero exit status. The returned action can also be
+passed to `toEventuallySucceed` or `toFail` when different semantics are
+required.
+
+---
+
+## `machine.configure`
+
+```nix
+machine.configure {
+  modules = [ module ];
 }
 ```
 
-Selects the NixOS VM backend and configures its Home Manager modules.
-`homeModules` defaults to an empty list. A test containing this action is run
-with `pkgs.testers.runNixOSTest` rather than the terminal runner.
+Selects the NixOS machine backend and configures its NixOS modules. `modules`
+defaults to an empty list.
+
+---
+
+## `machine.getByPattern`
+
+Locates a regular expression in the visible machine terminal.
+
+---
+
+## `machine.getByRegion`
+
+```nix
+machine.getByRegion {
+  left = 0;
+  top = 0;
+  width = 80;
+  height = 10;
+}
+```
+
+Selects a rectangular ASCII region from the visible machine terminal for
+use with `expect.toEqual`.
+
+---
+
+## `machine.getByText`
+
+Locates literal text in the visible machine terminal.
+
+---
+
+## `machine.open`
+
+```nix
+machine.open "nvim flake.nix"
+```
+
+Opens a command in a persistent terminal session on the NixOS machine.
+
+---
+
+## `machine.press`
+
+```nix
+machine.press "hello"
+machine.press "<enter>"
+```
+
+Sends literal text or a supported named key to the active machine terminal.
+
+---
+
+## `machine.print`
+
+Prints the visible machine terminal to the test log.

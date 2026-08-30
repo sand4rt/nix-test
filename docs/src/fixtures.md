@@ -1,280 +1,270 @@
 # Fixtures
 
-Fixtures are the interfaces a test uses to interact with the behavior under
-test. A test callback selects the fixtures it needs and returns an ordered list
-of actions:
+Fixtures are the interfaces available to a test callback. Nix Tests provides
+four built-ins: `terminal`, `machine`, `workspace`, and `expect`.
+
+Declare only the fixtures a test uses. The framework passes that exact subset,
+so strict callback argument sets do not need `...`.
+
+Suite-wide timeout and terminal dimensions are configured separately with
+`test.configure`; they are not fixtures or runtime actions.
 
 ```nix
-(test "shows ready" (
-  { terminal, workspace, expect, ... }:
-  [
-    (workspace.require [ my-package ])
-    (terminal.open "my-command")
-    ((expect (terminal.getByText "ready")).toBeVisible)
-  ]
-))
+test."shows ready" = { terminal, expect }: [
+  (terminal.open my-package)
+  (expect.toBeVisible (terminal.getByText "ready"))
+];
 ```
-
-The framework provides two fixtures for testing user-facing boundaries:
-
-- `terminal` drives applications through a real pseudo-terminal.
-- `vm` configures and tests a complete NixOS machine.
-
-The `workspace` and `expect` fixtures support both styles. Fixture plugins
-compose the built-ins into interfaces that express your application's
-vocabulary.
 
 ## Terminal Fixture
 
-Use `terminal` when the behavior is visible to someone interacting with a
-command-line or terminal application. The fixture launches the application in a
-real pseudo-terminal and observes a terminal-cell emulator, without requiring
-application-specific hooks or parsing log files.
+`terminal` drives a real pseudo-terminal and observes its terminal-cell grid.
+Use it for command-line and terminal applications.
 
 ```nix
-(test "opens a file" (
-  { terminal, workspace, expect, ... }:
-  [
-    (workspace.require [ configuredEditor ])
-    (workspace.writeFile "example.txt" "hello\n")
-    (terminal.open "editor ${workspace.path}/example.txt")
-
-    ((expect (terminal.getByText "hello")).toBeVisible)
-    (terminal.press "<esc>")
-  ]
-))
+test."opens a file" = { terminal, workspace, expect }: [
+  (workspace.writeFile "example.txt" "hello\n")
+  (terminal.open "${lib.getExe configuredEditor} ${workspace.path}/example.txt")
+  (expect.toBeVisible (terminal.getByText "hello"))
+  (terminal.press "<esc>")
+];
 ```
 
 ### Text Locators
 
-Use `terminal.getByText` when the behavior is that text becomes visible:
+Use a text locator when visible content is the behavior under test:
 
 ```nix
-((expect (terminal.getByText "ready")).toBeVisible)
+expect.toBeVisible (terminal.getByText "ready")
 ```
 
-The assertion retries until the text appears or the test timeout expires. This
-keeps synchronization tied to observable behavior rather than arbitrary sleeps.
+The matcher retries until the text appears or the timeout expires.
 
 ### Region Locators
 
-Use `terminal.getByRegion` when exact layout and terminal-cell content matter:
+Use a region locator when exact layout matters:
 
 ```nix
-((expect (terminal.getByRegion {
-  left = 0;
-  top = 2;
-  width = 40;
-  height = 2;
-})).toEqual ''
-  Name                  Status
-  example               ready
-'')
+expect.toEqual {
+  actual = terminal.getByRegion {
+    left = 0;
+    top = 2;
+    width = 40;
+    height = 2;
+  };
+  expected = ''
+    Name                  Status
+    example               ready
+  '';
+}
 ```
 
-Coordinates are zero-based. Leading spaces and Unicode characters are
-preserved. Prefer a text locator when it expresses the same behavior, because
-it is less coupled to presentation details.
+Coordinates are zero-based. Prefer text locators when layout is not part of the
+behavior being tested.
 
 ### Keyboard Input
 
-Use `terminal.press` to send literal text or named keys:
+`terminal.press` accepts literal text and these named keys:
 
 ```text
 <leader> <space> <esc> <escape> <enter> <cr> <tab> <bs>
 ```
 
-Use `terminal.print` to write the current terminal grid to the build log while
-debugging.
-
-See the [Terminal API](reference/terminal.md) for every action, locator, and
-matcher.
+Use `terminal.print` to include the current grid in the build log.
 
 ## Machine Fixture
 
-Use `vm` when behavior depends on services, users, permissions, networking, or
-the interaction between parts of a NixOS configuration. A test containing
-`vm.configure` runs through the NixOS test driver.
+`machine` configures a complete NixOS test machine. Use it for services, users,
+permissions, networking, and module interactions.
 
 ```nix
-(test "service starts" (
-  { vm, expect, ... }:
-  [
-    (vm.configure {
-      homeModules = [ serviceModule ];
-    })
-
-    (expect "systemctl --user start example.service").toSucceed
-    (expect "systemctl --user is-active example.service").toEventuallySucceed
-    (expect "pgrep forbidden-process").toFail
-  ]
-))
+test."service starts" = { machine, expect }: [
+  (machine.configure {
+    modules = [ serviceModule ];
+  })
+  (machine.command "systemctl start example.service")
+  (expect.toEventuallySucceed (machine.command "systemctl is-active example.service"))
+  (expect.toFail (machine.command "pgrep forbidden-process"))
+];
 ```
 
-### Command Matchers
-
-- `toSucceed` runs a command once and requires success.
+- `machine.command` runs once, prints stdout, and fails on a non-zero exit.
 - `toEventuallySucceed` retries until success or timeout.
 - `toFail` runs a command once and requires failure.
 
-Use `toEventuallySucceed` for asynchronous state such as service activation or
-file creation. Use a one-shot matcher when retrying could hide an ordering
-problem.
+The machine fixture also exposes the same terminal interaction shape as the
+standalone terminal fixture:
 
-The machine backend delegates to `pkgs.testers.runNixOSTest`. See the
-[Machine API](reference/machine.md) for exact signatures.
+```nix
+[
+  (machine.open "nvim flake.nix")
+  (machine.press ":Neotest summary")
+  (machine.press "<enter>")
+  (expect.toBeVisible (machine.getByText "checks"))
+  machine.print
+]
+```
+
+Use this form when the application needs a complete NixOS environment or a
+running Nix daemon.
 
 ## Workspace Fixture
 
-The `workspace` fixture provides an isolated directory for each terminal test:
+`workspace` provides an isolated mutable directory for terminal tests:
 
 ```nix
 [
-  (workspace.require [ my-package ])
   (workspace.writeFile "config.toml" config)
-  (terminal.open "my-command --config ${workspace.path}/config.toml")
+  (terminal.open "${lib.getExe my-package} --config ${workspace.path}/config.toml")
 ]
 ```
 
-Use `workspace.require` to keep runtime dependencies beside the test that needs
-them. Use `workspace.path` only in runtime values such as terminal commands; the
-runner replaces it with the actual temporary path.
+`workspace.path` is a runtime placeholder. Pass packages directly to
+`terminal.open`, or use `lib.getExe` in command strings that include arguments.
 
 ## Expect Fixture
 
-The `expect` fixture dispatches based on its target:
+`expect` exposes Nix-style matcher functions:
 
-- A terminal locator creates a retrying terminal assertion.
-- A command string creates a machine command assertion.
+```nix
+expect.toBeVisible locator
+expect.toEqual { actual = locator; expected = text; }
+expect.toEventuallySucceed (machine.command command)
+expect.toFail (machine.command command)
+```
 
-This keeps assertions consistent while allowing each testing boundary to use
-the synchronization behavior appropriate to it.
+Unary matchers accept their target directly. Matchers with several values use a
+named attribute set so argument meaning remains clear.
 
 ## Plugins
 
-Plugins are custom fixtures built from the fixture set. They are ordinary Nix
-values, not a separate package format or runtime system. Use them to hide
-repeated setup and expose actions in the language of your application.
+Plugins add application-specific fixtures and matchers through mergeable
+flake-parts options. Tests consume the additions exactly like built-ins.
 
-### Create a Fixture
-
-Define a function that accepts the built-in fixtures and returns an attribute
-set. The returned values can be functions, locators, assertions, actions, or
-lists of actions:
+### Custom Fixture
 
 ```nix
-makeApp = { terminal, workspace, expect, ... }: {
-  openProject = name: [
-    (workspace.writeFile "${name}/project.txt" "ready\n")
-    (terminal.open "my-app ${workspace.path}/${name}")
-  ];
+testing.fixtures.app = inputs.tests.lib.mkFixture (_fixtures: {
+  status = name:
+    inputs.tests.lib.mkLocator {
+      type = "appStatus";
+      inherit name;
+    };
+});
+```
 
-  expectReady =
-    (expect (terminal.getByText "ready")).toBeVisible;
+The factory receives the complete fixture set. Its return value is injected as
+`app` into test callbacks. Fixture definitions may refer to one another through
+the recursive fixture set. Use `lib.mkLocator` when a fixture exposes a value
+for custom matchers. Use `lib.mkTarget` for non-locator matcher inputs, such as
+commands or protocol requests.
+
+A reusable locator file registers locators under their owning fixture:
+
+```nix
+# src/locators.nix
+{ mkLocator, ... }:
+{
+  testing.locators.app.getByStatus = status: mkLocator {
+    type = "appStatus";
+    inherit status;
+  };
+}
+```
+
+Import it from the per-system scope. Its locators are merged into `app`:
+
+```nix
+perSystem = { ... }: {
+  imports = [ ./src/locators.nix ];
 };
 ```
 
-Dependencies are explicit in the function arguments, so a fixture can be
-understood and tested independently of the cases that use it.
-
-### Extend `test`
-
-Wrap the built-in `test` function and merge your fixture into the set passed to
-the callback:
+### Custom Matcher
 
 ```nix
-tests =
-  { test, ... }:
-  let
-    makeApp = { terminal, workspace, expect, ... }: {
-      openProject = name: [
-        (workspace.writeFile "${name}/project.txt" "ready\n")
-        (terminal.open "my-app ${workspace.path}/${name}")
-      ];
-
-      expectReady =
-        (expect (terminal.getByText "ready")).toBeVisible;
+testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
+  accepts = [ "appStatus" ];
+  run = _fixtures: target:
+    inputs.tests.lib.mkAction "assertAppStatus" {
+      inherit (target) name;
     };
-
-    testWithApp = name: callback:
-      test name (fixtures:
-        callback (fixtures // { app = makeApp fixtures; }));
-  in
-  [
-    (testWithApp "opens a project" (
-      { app, ... }:
-      app.openProject "example" ++ [ app.expectReady ]
-    ))
-  ];
+};
 ```
 
-The callback receives `app` alongside the built-in fixtures. Nix's `//`
-operator is the fixture composition mechanism.
-
-### Reuse Fixtures
-
-Move a reusable constructor into its own Nix module:
+`mkMatcher` validates the target before running the matcher. `mkAction` creates
+the serializable action consumed by a custom backend. The matcher becomes
+available on `expect`:
 
 ```nix
-# tests/fixtures/app.nix
-{ terminal, workspace, expect, ... }:
-{
-  open = file: [
-    (workspace.writeFile file "ready\n")
-    (terminal.open "my-app ${workspace.path}/${file}")
-  ];
+test."reports ready" = { app, expect }: [
+  (expect.toBeReady (app.status "ready"))
+];
+```
 
-  expectReady =
-    (expect (terminal.getByText "ready")).toBeVisible;
+### Reusable Plugin
+
+Put fixture and matcher declarations in one flake-parts module:
+
+```nix
+# src/plugin.nix
+{ ... }:
+{
+  perSystem = { ... }: {
+    testing.fixtures.app = inputs.tests.lib.mkFixture (_fixtures: {
+      status = name:
+        inputs.tests.lib.mkLocator {
+          type = "appStatus";
+          inherit name;
+        };
+    });
+
+    testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
+      accepts = [ "appStatus" ];
+      run = _fixtures: target:
+        inputs.tests.lib.mkAction "assertAppStatus" {
+          inherit (target) name;
+        };
+    };
+  };
 }
 ```
 
-Import it while extending the fixture set:
+Import it once:
 
 ```nix
-let
-  testWithApp = name: callback:
-    test name (fixtures:
-      callback (fixtures // {
-        app = import ./tests/fixtures/app.nix fixtures;
-      }));
-in
-[
-  (testWithApp "shows status" ({ app, ... }:
-    app.open "status.txt" ++ [ app.expectReady ]))
-]
+imports = [
+  inputs.tests.flakeModules.default
+  ./src/plugin.nix
+];
 ```
 
-The same pattern can compose several fixture modules. Give each fixture a
-distinct attribute name and merge them into the callback's fixture set.
+Individual test files need no plugin import.
 
-### Setup and Cleanup
+### Plain Flakes
 
-Tests are ordered action lists. A custom fixture can expose reusable setup
-actions that a test places before its behavior and assertions:
+Pass plugin definitions to `lib.mkTests`:
 
 ```nix
-{
-  setup = [
-    (workspace.require [ package ])
-    (workspace.writeFile "config.toml" config)
-  ];
-}
+checks.${system} = inputs.tests.lib.mkTests {
+  inherit pkgs test;
+  fixtures = {
+    app = inputs.tests.lib.mkFixture (
+      fixtures: import ./fixtures/app.nix fixtures
+    );
+  };
+  matchers = {
+    toBeReady = inputs.tests.lib.mkMatcher {
+      accepts = [ "appStatus" ];
+      run = _fixtures: target:
+        inputs.tests.lib.mkAction "assertAppStatus" {
+          inherit (target) name;
+        };
+    };
+  };
+};
 ```
 
-There is currently no custom fixture lifecycle or automatic teardown API.
-Terminal processes and temporary workspaces are cleaned up by the runner. A
-custom resource that needs additional cleanup must model it explicitly in the
-test's actions or in its execution backend.
-
-### Custom Testing Boundaries
-
-Application fixtures compose existing actions. Supporting a completely new
-testing boundary requires three framework pieces:
-
-1. Nix fixtures that construct serializable actions and locators.
-2. A runner that executes those actions inside a derivation.
-3. Dispatch logic that selects the runner for matching tests.
-
-This is how the terminal and machine fixtures differ internally. See
-[Architecture](architecture.md) for the current execution model.
+There is no custom fixture setup or teardown lifecycle. Fixtures return values
+and reusable action lists; terminal processes and workspaces are cleaned up by
+the runner.

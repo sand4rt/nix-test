@@ -6,79 +6,172 @@ This reference is generated from documentation beside the public Nix API.
 Edit the corresponding `@doc` block and regenerate this page instead of
 editing it directly.
 
+## `lib.mkAction`
+
+```nix
+inputs.tests.lib.mkAction "appOpen" { inherit path; }
+```
+
+Creates a serializable test action. Custom backends can use it to define
+actions consumed by their runner.
+
+---
+
+## `lib.mkFixture`
+
+```nix
+inputs.tests.lib.mkFixture ({ terminal, workspace, ... }: {
+  open = file: [
+    (workspace.writeFile file "")
+    (terminal.open file)
+  ];
+})
+```
+
+Registers a fixture factory. The factory receives the recursive fixture set
+and returns the value exposed to test callbacks.
+
+---
+
+## `lib.mkLocator`
+
+```nix
+inputs.tests.lib.mkLocator {
+  type = "appStatus";
+  inherit name;
+}
+```
+
+Creates a typed locator for custom fixtures and matchers. The `type` identifies
+compatible matchers; all other attributes hold locator-specific data.
+
+---
+
+## `lib.mkMatcher`
+
+```nix
+inputs.tests.lib.mkMatcher {
+  accepts = [ "appStatus" ];
+  run = fixtures: target:
+    inputs.tests.lib.mkAction "assertAppStatus" {
+      inherit (target) name;
+    };
+}
+```
+
+Creates a fixture-aware matcher factory. `accepts` lists valid target types;
+omit it for a matcher that accepts any value. Invalid targets fail during Nix
+evaluation before a runner is built.
+
+---
+
+## `lib.mkTarget`
+
+```nix
+inputs.tests.lib.mkTarget "appStatus" { inherit name; }
+```
+
+Creates a typed matcher target. Matchers use the target type to reject values
+from an incompatible fixture.
+
+---
+
 ## `lib.mkTests`
 
 ```nix
-inputs.tests.lib.mkTests { inherit pkgs; } tests
+inputs.tests.lib.mkTests {
+  inherit pkgs test;
+  fixtures = { };
+  locators = { };
+  matchers = { };
+}
 ```
 
-Converts a test declaration into an attribute set of derivations suitable for
-`checks.${system}`. Each `test` name becomes an attribute name. Cases containing
-`vm.configure` use the NixOS VM backend; all other cases use the terminal
-backend.
-
-The `tests` argument is a function receiving `test` and returning a list of
-cases:
-
-```nix
-{ test, ... }:
-[
-  (test "example" ({ terminal, expect, ... }: [
-    (terminal.open "example")
-    ((expect (terminal.getByText "ready")).toBeVisible)
-  ]))
-]
-```
+Converts an attribute set of test callbacks into derivations suitable for
+`checks.${system}`. Attribute names become check names. `fixtures`, `locators`,
+and `matchers` use the same plugin format as the flake-parts module and default
+to empty attribute sets. Reserve `test.configure` for suite-wide defaults.
 
 ---
 
 ## `test`
 
 ```nix
-test name callback
+test."shows greeting" = { terminal, expect }: [
+  (terminal.open pkgs.hello)
+  (expect.toBeVisible (terminal.getByText "Hello"))
+];
 ```
 
-Declares one named test case. `callback` receives the `terminal`, `workspace`,
-`vm`, and `expect` fixtures and returns an ordered list of actions. The name is
-preserved as the check attribute, including spaces.
+A mergeable attribute set of integration-test callbacks. Attribute names
+become check names. Each callback receives the resolved fixture set and
+returns an ordered list of actions. `test.configure` is reserved for
+suite-wide configuration.
 
 ---
 
-## `testers.runTUITest`
+## `test.configure`
 
 ```nix
-pkgs.testers.runTUITest {
-  name = "example";
-  tests = { test, ... }: [ ];
-  columns = 140;
-  rows = 42;
-  timeout = 15;
-}
+test.configure = {
+  timeout = 30;
+  terminal = {
+    columns = 80;
+    rows = 24;
+  };
+};
 ```
 
-Builds one terminal test derivation. `columns`, `rows`, and `timeout` are
-optional and default to `140`, `42`, and `15` seconds respectively. Prefer
-`lib.mkTests` for independent flake checks; use this lower-level API when a
-single derivation should contain several terminal cases.
+Configures every test declared in the current `perSystem` scope. `timeout`
+controls terminal assertion retries and defaults to 15 seconds. Terminal
+dimensions default to 140 columns by 42 rows.
 
 ---
 
-## `testers.test`
+## `testing.fixtures`
 
 ```nix
-pkgs.testers.test { type = "tui"; name = "example"; tests = tests; }
-pkgs.testers.test { type = "nixos"; name = "example"; testScript = testScript; }
+testing.fixtures.app = inputs.tests.lib.mkFixture ({ terminal, workspace, ... }: {
+  open = file: [
+    (workspace.writeFile file "")
+    (terminal.open file)
+  ];
+});
 ```
 
-Dispatches to the terminal or NixOS test runner. `type` defaults to `"tui"`
-and may be `"tui"` or `"nixos"`.
+A mergeable attribute set of fixtures created with `lib.mkFixture`. Each
+factory receives the complete fixture set and returns the value injected
+under its attribute name. Built-in fixture names cannot be replaced.
 
 ---
 
-## `testers.testCase`
+## `testing.locators`
 
 ```nix
-pkgs.testers.testCase name callback
+testing.locators.app.getByStatus = status: mkLocator {
+  type = "appStatus";
+  inherit status;
+};
 ```
 
-Constructs a named test-case value for callers using the overlay API.
+Locators grouped by their owning fixture. Locator modules can be imported
+directly and receive `mkLocator` as a per-system module argument.
+
+---
+
+## `testing.matchers`
+
+```nix
+testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
+  accepts = [ "appStatus" ];
+  run = _fixtures: target:
+    inputs.tests.lib.mkAction "assertAppStatus" {
+      inherit (target) name;
+    };
+};
+```
+
+A mergeable attribute set of custom matcher factories. Each factory
+receives the complete fixture set and returns a matcher function exposed
+on `expect` under its attribute name. Use `lib.mkMatcher` to validate
+targets. Built-in matcher names cannot be replaced.

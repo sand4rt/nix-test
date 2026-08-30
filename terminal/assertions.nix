@@ -1,39 +1,10 @@
+{ mkAction }:
 {
-  /** @doc expect.terminal
-  ## `expect` (terminal)
-
-  ```nix
-  expect locator
-  ```
-
-  Creates retrying assertions for a terminal locator. Assertions retry until
-  they pass or the test timeout expires, so tests should synchronize on
-  observable output instead of using sleeps.
-
-  ### `toBeVisible`
-
-  ```nix
-  ((expect (terminal.getByText "ready")).toBeVisible)
-  ```
-
-  Passes when the locator's text appears in the visible terminal.
-
-  ### `toEqual`
-
-  ```nix
-  ((expect (terminal.getByRegion region)).toEqual expected)
-  ```
-
-  Passes when the selected terminal cells exactly equal `expected`, excluding
-  surrounding newlines in the expected Nix multiline string.
-  */
   make = target: {
-    toBeVisible = {
-      type = "assertText";
+    toBeVisible = mkAction "assertText" {
       text = target.text;
     };
-    toEqual = expected: {
-      type = "assertRegion";
+    toEqual = expected: mkAction "assertRegion" {
       inherit expected;
       left = target.left;
       top = target.top;

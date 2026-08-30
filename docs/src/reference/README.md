@@ -2,7 +2,7 @@
 
 The generated API reference is grouped by test boundary:
 
-- [Core API](core.md) covers test declarations and lower-level constructors.
+- [Core API](core.md) covers test declarations, plugins, and plain-flake usage.
 - [Terminal API](terminal.md) covers terminal actions, locators, assertions, and
   workspaces.
 - [Machine API](machine.md) covers NixOS machine configuration and command
