@@ -29,6 +29,7 @@
           {
             imports = [
               ./expect/fixture.test.nix
+              ./filesystem/fixture.test.nix
               ./machine/fixture.test.nix
               ./service/fixture.test.nix
               ./step/fixture.test.nix

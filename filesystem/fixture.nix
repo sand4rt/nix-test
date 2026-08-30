@@ -5,9 +5,10 @@
 }:
 let
   workspace = "/tmp/nix-test";
-  pathTarget = node: path: kind: mkLocator {
+  pathTarget = machine: path: kind: mkLocator {
     type = "path";
-    inherit node kind;
+    node = machine.name;
+    inherit kind;
     path = builtins.replaceStrings [ "$fixture" ] [ workspace ] path;
     description = "${kind} ${path}";
   };
