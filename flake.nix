@@ -34,6 +34,7 @@
               ./http/fixture.test.nix
               ./machine/fixture.test.nix
               ./network/fixture.test.nix
+              ./result/fixture.test.nix
               ./user/fixture.test.nix
               ./service/fixture.test.nix
               ./step/fixture.test.nix
