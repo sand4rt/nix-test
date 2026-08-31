@@ -108,10 +108,6 @@ let
 
     # ${title}
 
-    This reference is generated from documentation beside the public Nix API.
-    Edit the corresponding `@doc` block and regenerate this page instead of
-    editing it directly.
-
     ${lib.concatStringsSep "\n\n---\n\n" (map (entry: entry.text) selected)}
   '';
   categorized = lib.concatMap (
