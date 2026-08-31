@@ -4,9 +4,17 @@
     { config, pkgs, ... }:
     let
       builders = import ./core/builders.nix;
+      testFixtures = import ./core/fixtures.nix {
+        inherit pkgs;
+        inherit (pkgs) lib;
+        fixtureFactories = config.testing.fixtures;
+        inherit (config.testing) locators;
+        matcherFactories = config.testing.matchers;
+      };
     in
     {
       config._module.args = builders // {
+        inherit (testFixtures) expect;
         test = import ./step/fixture.nix builders;
       };
       /**
@@ -14,15 +22,15 @@
         ## `test`
 
         ```nix
-        test."shows greeting" = { terminal, expect }: [
+        test."shows greeting" = { terminal }: [
           (terminal.open pkgs.hello)
-          (expect.toBeVisible (terminal.getByText "Hello"))
+          (expect (terminal.getByText "Hello")).toBeVisible
         ];
         ```
 
-        A mergeable attribute set of integration-test callbacks. Attribute names
-        become check names. Each callback receives the resolved fixture set and
-        returns an ordered list of actions. `test.configure` is reserved for
+        A mergeable attribute set of integration-test fixture callbacks. Attribute
+        names become check names. `test` and `expect` are module arguments; runtime
+        fixtures are callback arguments. `test.configure` is reserved for
         suite-wide configuration.
       */
       options.test = lib.mkOption {
@@ -101,16 +109,16 @@
         testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
           accepts = [ "appStatus" ];
           run = { expect, ... }: target:
-            expect.toBeVisible (inputs.tests.lib.mkLocator {
+            (expect (inputs.tests.lib.mkLocator {
               type = "terminalText";
               text = target.status;
-            });
+            })).toBeVisible;
         };
         ```
 
         A mergeable attribute set of custom matcher factories. Each factory
         receives the complete fixture set and returns a matcher function exposed
-        on `expect` under its attribute name. Use `lib.mkMatcher` to validate
+        on the value returned by `expect target`. Use `lib.mkMatcher` to validate
         targets. Built-in matcher names cannot be replaced.
       */
       options.testing.matchers = lib.mkOption {

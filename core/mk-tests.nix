@@ -11,10 +11,11 @@
   }
   ```
 
-  Converts an attribute set of test callbacks into derivations suitable for
+  Converts an attribute set of fixture callbacks into derivations suitable for
   `checks.${system}`. Attribute names become check names. `fixtures`, `locators`,
   and `matchers` use the same plugin format as the flake-parts module and default
-  to empty attribute sets. Reserve `test.configure` for suite-wide defaults.
+  to empty attribute sets. Each test must be a callback that receives only the
+  fixtures it requests. Reserve `test.configure` for suite-wide defaults.
 */
 {
   pkgs,
@@ -29,6 +30,14 @@ let
     inherit pkgs;
     inherit (pkgs) lib;
   } // builders;
+  resolvedFixtures = import ./fixtures.nix {
+    inherit pkgs;
+    inherit (pkgs) lib;
+    fixtureFactories = fixtures;
+    inherit locators;
+    matcherFactories = matchers;
+  };
+  testFixtures = builtins.removeAttrs resolvedFixtures [ "expect" ];
   terminal = (import ../overlay.nix pkgs pkgs).testers.tui;
   defaults = {
     timeout = 15;
@@ -39,6 +48,19 @@ let
   };
   configuration = pkgs.lib.recursiveUpdate defaults (test.configure or { });
   testCases = builtins.removeAttrs test [ "configure" ];
+  unknownCaseFixtures = pkgs.lib.concatMap (
+    name:
+    let callback = testCases.${name};
+    in
+    if builtins.isFunction callback then
+      map (fixture: "${name}: ${fixture}") (
+        builtins.filter (fixture: !(builtins.hasAttr fixture testFixtures)) (
+          builtins.attrNames (builtins.functionArgs callback)
+        )
+      )
+    else
+      [ ]
+  ) (builtins.attrNames testCases);
   allowedConfiguration = [
     "timeout"
     "terminal"
@@ -58,7 +80,6 @@ let
     "workspace"
     "machine"
     "machines"
-    "expect"
     "service"
     "filesystem"
     "network"
@@ -103,28 +124,15 @@ let
     in
     !builtins.isAttrs fixture || (fixture._kind or null) != "fixture"
   ) (builtins.attrNames fixtures);
-  testFixtures = import ./fixtures.nix {
-    inherit pkgs;
-    inherit (pkgs) lib;
-    fixtureFactories = fixtures;
-    inherit locators;
-    matcherFactories = matchers;
-  };
   cases = builtins.mapAttrs (
     name: callback:
-    let
-      arguments = builtins.functionArgs callback;
-      requested = builtins.attrNames arguments;
-      unknown = builtins.filter (
-        fixture: !(builtins.hasAttr fixture testFixtures) && !arguments.${fixture}
-      ) requested;
-    in
-    assert pkgs.lib.assertMsg (
-      unknown == [ ]
-    ) "nix-test: test '${name}' requests unknown fixtures: ${builtins.concatStringsSep ", " unknown}";
     {
       inherit name;
-      actions = callback (builtins.intersectAttrs (builtins.functionArgs callback) testFixtures);
+      actions =
+        if builtins.isFunction callback then
+          callback (builtins.intersectAttrs (builtins.functionArgs callback) testFixtures)
+        else
+          callback;
     }
   ) testCases;
   invalidCases = builtins.filter (
@@ -145,7 +153,8 @@ let
           )
         );
     in
-    !builtins.isList actions
+    !builtins.isFunction testCases.${name}
+    || !builtins.isList actions
     || !(builtins.all validAction actions)
   ) (builtins.attrNames cases);
   machineActionTypes = [
@@ -259,6 +268,8 @@ assert pkgs.lib.assertMsg (matcherCollisions == [ ])
   "nix-test: custom matchers cannot replace built-ins: ${builtins.concatStringsSep ", " matcherCollisions}";
 assert pkgs.lib.assertMsg (unknownLocatorOwners == [ ])
   "nix-test: locators reference unknown fixtures: ${builtins.concatStringsSep ", " unknownLocatorOwners}";
+assert pkgs.lib.assertMsg (unknownCaseFixtures == [ ])
+  "nix-test: tests request unknown fixtures: ${builtins.concatStringsSep ", " unknownCaseFixtures}";
 assert pkgs.lib.assertMsg (invalidCases == [ ])
   "nix-test: tests must return only actions created with lib.mkAction: ${builtins.concatStringsSep ", " invalidCases}";
 assert pkgs.lib.assertMsg (missingMachineConfigurations == [ ])
@@ -280,15 +291,15 @@ builtins.mapAttrs (
       nodes = builtins.mapAttrs (_: options: {
         imports = [
           {
-            environment.systemPackages = [
-              pkgs.curl
-              pkgs.iptables
-              pkgs.jq
-              pkgs.netcat
-              pkgs.tmux
-            ];
-          }
-        ]
+           environment.systemPackages = [
+             pkgs.curl
+             pkgs.iptables
+             pkgs.jq
+             pkgs.netcat
+             pkgs.tmux
+           ];
+         }
+       ]
         ++ options.modules;
       }) nodes;
       extraPythonPackages = pythonPackages: pkgs.lib.optional (browsers != [ ]) pythonPackages.selenium;
