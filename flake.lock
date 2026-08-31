@@ -49,6 +49,22 @@
         "type": "github"
       }
     },
+    "neotest-nix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786558234,
+        "narHash": "sha256-iwFGNs+gPwj+eMkL2z5kWShd+/YdGrA+I0bR8kAODZU=",
+        "owner": "khaneliman",
+        "repo": "neotest-nix",
+        "rev": "4e3b6ac16679e666764d84b028313e05ab505da1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "khaneliman",
+        "repo": "neotest-nix",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1787962033,
@@ -105,6 +121,7 @@
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
+        "neotest-nix": "neotest-nix",
         "nixpkgs": "nixpkgs",
         "nvf": "nvf"
       }

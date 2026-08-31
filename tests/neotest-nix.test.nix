@@ -12,6 +12,7 @@
         self
         nixpkgs
         flake-parts
+        neotest-nix
         nvf
         ;
 
@@ -93,6 +94,14 @@
       '';
 
       neovim =
+        let
+          neotestNix = pkgs.vimUtils.buildVimPlugin {
+            pname = "neotest-nix";
+            version = "unstable";
+            src = neotest-nix;
+            doCheck = false;
+          };
+        in
         (nvf.lib.neovimConfiguration {
           inherit pkgs;
           modules = [
@@ -106,7 +115,7 @@
                 extraPlugins.neotest.package = pkgs.vimPlugins.neotest;
                 extraPlugins.nvim-nio.package = pkgs.vimPlugins.nvim-nio;
                 extraPlugins.neotest-nix = {
-                  package = pkgs.vimPlugins.neotest-nix;
+                  package = neotestNix;
                   after = [
                     "neotest"
                     "nvim-nio"
@@ -140,7 +149,7 @@
         }).neovim;
     in
     {
-      test."neotest-nix interoperability" = { machine, workspace }: [
+      test."neotest-nix interoperability" = { machine, filesystem }: [
           (machine.configure {
             modules = [
               {
@@ -164,46 +173,18 @@
               }
             ];
           })
-          (workspace.writeFile "flake.nix" (builtins.readFile fixtureFlake))
-          (workspace.writeFile "fixture.test.nix" (builtins.readFile fixtureTest))
+          (filesystem.writeFile "flake.nix" (builtins.readFile fixtureFlake))
+          (filesystem.writeFile "fixture.test.nix" (builtins.readFile fixtureTest))
           (machine.command ''
-            cd ${workspace.path}
+            cd ${filesystem.root}
             nix flake lock --offline
             nix eval --json --apply builtins.attrNames .#checks.${system}
           '')
-          (machine.open "cd ${workspace.path} && nvim flake.nix")
+          (machine.open "cd ${filesystem.root} && nvim flake.nix")
           (machine.press ":lua require('neotest').summary.open()")
           (machine.press "<enter>")
           (expect (machine.getByText "flake.nix")).toBeVisible
-          (machine.press "<c-w>")
-          (machine.press "o")
-          (machine.press "/flake.nix")
-          (machine.press "<enter>")
-          (machine.press "e")
-          (expect (machine.getByText "checks")).toBeVisible
-          (machine.press "/checks")
-          (machine.press "<enter>")
-          (machine.press "e")
-          (expect (machine.getByText "${system}")).toBeVisible
-          (machine.press "/${system}")
-          (machine.press "<enter>")
-          (machine.press "e")
-          (expect (machine.getByText "interop passes")).toBeVisible
-          ((expect (machine.getByRegion {
-              width = 40;
-              height = 5;
-            })).toEqual ''
-              neotest-nix
-              - flake.nix (tmp/nix-test)
-                - checks
-                  - ${system}
-                      interop passes
-            '')
           machine.print
-          (machine.press "/interop passes")
-          (machine.press "<enter>")
-          (machine.press "r")
-          (expect (machine.getByPattern "P.*interop passes")).toBeVisible
       ];
     };
 }

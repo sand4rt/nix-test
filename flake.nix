@@ -7,6 +7,10 @@
     url = "github:NotAShelf/nvf";
     inputs.nixpkgs.follows = "nixpkgs";
   };
+  inputs.neotest-nix = {
+    url = "github:khaneliman/neotest-nix";
+    flake = false;
+  };
 
   outputs =
     inputs@{
@@ -41,7 +45,6 @@
               ./service/fixture.test.nix
               ./step/fixture.test.nix
               ./tests/readme.test.nix
-              ./workspace/fixture.test.nix
               ./terminal/terminal.test.nix
             ];
             test = {

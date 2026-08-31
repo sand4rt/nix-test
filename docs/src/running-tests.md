@@ -41,7 +41,12 @@ With NVF, add the adapter and its dependencies:
       neotest.package = pkgs.vimPlugins.neotest;
       nvim-nio.package = pkgs.vimPlugins.nvim-nio;
       neotest-nix = {
-        package = pkgs.vimPlugins.neotest-nix;
+        package = pkgs.vimUtils.buildVimPlugin {
+          pname = "neotest-nix";
+          version = "unstable";
+          src = inputs.neotest-nix;
+          doCheck = false;
+        };
         after = [
           "neotest"
           "nvim-nio"
