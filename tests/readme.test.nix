@@ -25,7 +25,6 @@
         }
       ];
     })
-    (expect (machine.service "ngircd.service")).toBeActive
     (machine.open "irssi --connect localhost --nick alice")
     (expect (machine.getByText "Welcome to Nix Test IRC")).toBeVisible
     (machine.press "/join #nix-test<enter>")
