@@ -4,6 +4,21 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.desktop
+  ## `desktop`
+
+  ```nix
+  desktop.getByWindow machine title
+  desktop.getByText machine text
+  desktop.press machine keys
+  desktop.type machine text
+  desktop.screenshot machine name
+  ```
+
+  Desktop tests use the machine backend. Locators can be passed to visibility
+  matchers; input and screenshot methods execute once.
+*/
 let nodeExpression = name: ''machines[${builtins.toJSON name}]'';
 in
 {

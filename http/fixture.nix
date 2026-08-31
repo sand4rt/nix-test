@@ -6,6 +6,27 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.http
+  ## `http`
+
+  ```nix
+  http.get machine request
+  http.getJson machine request
+  http.request machine method request
+  http.send machine {
+    method = "POST";
+    url = "http://localhost/items";
+    headers = { };
+    body = null;
+    saveAs = "create-item";
+  }
+  ```
+
+  A request may be a URL string or `{ url, headers ? { }, body ? null }`.
+  Observation methods return retryable locators and must be idempotent.
+  `send` executes once and stores a command result under `saveAs`.
+*/
 let
   nodeExpression = name: ''machines[${builtins.toJSON name}]'';
   target = machine: method: request:

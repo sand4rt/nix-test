@@ -6,6 +6,29 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.browser
+  ## `browser`
+
+  Browser actions run through Firefox and Selenium on the machine backend.
+  Call `browser.configure machine` before other browser actions.
+
+  ```nix
+  browser.configure machine
+  browser.open machine url
+  browser.getByRole machine role { name ? ""; }
+  browser.getByLabel machine label
+  browser.getByPlaceholder machine placeholder
+  browser.getByText machine text
+  browser.getByTitle machine title
+  browser.click element
+  browser.fill element value
+  browser.clear element
+  browser.press element keys
+  ```
+
+  Locator methods return browser element locators. Action methods execute once.
+*/
 let
   browserExpression = name: ''browsers[${builtins.toJSON name}]'';
   find = target: ''find_element(${browserExpression target.node}, ${builtins.toJSON target.strategy}, ${builtins.toJSON target.value})'';

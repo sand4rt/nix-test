@@ -6,6 +6,17 @@ This reference is generated from documentation beside the public Nix API.
 Edit the corresponding `@doc` block and regenerate this page instead of
 editing it directly.
 
+## `lib.fixtures`
+
+```nix
+inputs.tests.lib.fixtures { inherit pkgs; }
+```
+
+Resolves the complete built-in fixture set for advanced integrations.
+Most projects should use `lib.mkTests` or the flake-parts module instead.
+
+---
+
 ## `lib.mkAction`
 
 ```nix
@@ -53,16 +64,19 @@ compatible matchers; all other attributes hold locator-specific data.
 ```nix
 inputs.tests.lib.mkMatcher {
   accepts = [ "appStatus" ];
-  run = fixtures: target:
-    inputs.tests.lib.mkAction "assertAppStatus" {
-      inherit (target) name;
-    };
+  run = { expect, ... }: target:
+    expect.toBeVisible (inputs.tests.lib.mkLocator {
+      type = "terminalText";
+      text = target.status;
+    });
 }
 ```
 
 Creates a fixture-aware matcher factory. `accepts` lists valid target types;
-omit it for a matcher that accepts any value. Invalid targets fail during Nix
-evaluation before a runner is built.
+omit it for a matcher that accepts any tagged action, locator, or target.
+Invalid targets fail during Nix evaluation before a runner is built. Compose
+matchers from runtime-backed locators and matchers unless a runner explicitly
+supports the custom action type.
 
 ---
 
@@ -95,15 +109,11 @@ to empty attribute sets. Reserve `test.configure` for suite-wide defaults.
 
 ---
 
-## `lib.test.step`
+## `lib.test`
 
-```nix
-test.step "user sees ready state" [
-  (expect.toBeVisible (terminal.getByText "ready"))
-]
-```
-
-Groups related actions under a diagnostic name.
+Plain-flake callers use `lib.test.step name actions` to create named
+steps. Flake-parts users receive the same object as the `test` module
+argument and call `test.step name actions`.
 
 ---
 
@@ -123,7 +133,7 @@ suite-wide configuration.
 
 ---
 
-## `test.configure`
+### `test.configure`
 
 ```nix
 test.configure = {
@@ -138,6 +148,71 @@ test.configure = {
 Configures every test declared in the current `perSystem` scope. `timeout`
 controls standalone terminal assertion retries and defaults to 15 seconds.
 Standalone terminal dimensions default to 140 columns by 42 rows.
+
+---
+
+### `test.step`
+
+Groups actions into a named step. The step appears as a nested subtest in
+the test log, making longer scenarios easier to read and debug.
+
+**Usage**
+
+```nix
+test.step "service becomes usable" [
+  (expect.toBeActive (machine.service "example.service"))
+  (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
+]
+```
+
+**Arguments**
+
+- `name`: Name shown in the test log.
+- `actions`: Ordered list of actions in the step.
+
+Returns an action that can be placed in a test's action list. Steps may
+contain other steps.
+
+---
+
+## `testers.runTUITest`
+
+```nix
+pkgs.testers.runTUITest {
+  name = "example";
+  tests = { test, ... }: [ ];
+  columns = 140;
+  rows = 42;
+  timeout = 15;
+}
+```
+
+Builds one terminal test derivation. `columns`, `rows`, and `timeout` are
+optional and default to `140`, `42`, and `15` seconds respectively. Prefer
+`lib.mkTests` for independent flake checks; use this lower-level API when a
+single derivation should contain several terminal cases.
+
+---
+
+## `testers.test`
+
+```nix
+pkgs.testers.test { type = "tui"; name = "example"; tests = tests; }
+pkgs.testers.test { type = "nixos"; name = "example"; testScript = testScript; }
+```
+
+Dispatches to the terminal or NixOS test runner. `type` defaults to `"tui"`
+and may be `"tui"` or `"nixos"`.
+
+---
+
+## `testers.testCase`
+
+```nix
+pkgs.testers.testCase name callback
+```
+
+Constructs a named test-case value for callers using the overlay API.
 
 ---
 
@@ -177,10 +252,11 @@ directly and receive `mkLocator` as a per-system module argument.
 ```nix
 testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
   accepts = [ "appStatus" ];
-  run = _fixtures: target:
-    inputs.tests.lib.mkAction "assertAppStatus" {
-      inherit (target) name;
-    };
+  run = { expect, ... }: target:
+    expect.toBeVisible (inputs.tests.lib.mkLocator {
+      type = "terminalText";
+      text = target.status;
+    });
 };
 ```
 

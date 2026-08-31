@@ -3,6 +3,19 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.result
+  ## `result`
+
+  ```nix
+  result.command name
+  result.stdout name
+  result.exitCode name
+  ```
+
+  These methods locate results saved by `machine.run` or `http.send`. Assertions
+  inspect the saved value without repeating the original side effect.
+*/
 {
   testing.fixtures.result = mkFixture (_fixtures: {
     /** Locate a complete saved command or request result. */

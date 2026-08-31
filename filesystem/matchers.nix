@@ -4,6 +4,26 @@
   mkMatcher,
   ...
 }:
+/**
+  @doc assertions.filesystem
+  ## Filesystems and presence
+
+  ```nix
+  expect.toExist target
+  expect.toBeAbsent target
+  expect.toBeFile path
+  expect.toBeDirectory path
+  expect.toBeSymlink path
+  expect.toBeMounted path
+  expect.toHaveContent target expected
+  expect.toPointTo target expected
+  expect.toHaveMode target expected
+  expect.toBeOwnedBy target user
+  ```
+
+  Presence matchers accept path and user locators where applicable. Filesystem
+  observations retry until the configured timeout.
+*/
 let
   assertion = target: command: mkAction "machinePredicate" {
     inherit (target) node description;

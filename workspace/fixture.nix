@@ -5,6 +5,24 @@
   mkFixture,
   ...
 }:
+/**
+  @doc fixture.workspace
+  ## `workspace`
+
+  ```nix
+  workspace.path
+  workspace.writeFile relativePath content
+  workspace.makeDirectory relativePath
+  workspace.copyFile source relativeDestination
+  workspace.copyTree source relativeDestination
+  workspace.symlink target relativeLinkPath
+  workspace.setMode relativePath mode
+  workspace.remove relativePath
+  ```
+
+  Workspace paths are isolated and mutable at runtime. Relative paths must be
+  non-empty and cannot be absolute, `.`, or contain a `..` component.
+*/
 let
   validPath =
     path:

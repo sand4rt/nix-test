@@ -69,7 +69,26 @@
         in
         builders
         // {
+        /**
+          @doc lib.test
+          ## `lib.test`
+
+          Plain-flake callers use `lib.test.step name actions` to create named
+          steps. Flake-parts users receive the same object as the `test` module
+          argument and call `test.step name actions`.
+        */
         test = import ./step/fixture.nix builders;
+        /**
+          @doc lib.fixtures
+          ## `lib.fixtures`
+
+          ```nix
+          inputs.tests.lib.fixtures { inherit pkgs; }
+          ```
+
+          Resolves the complete built-in fixture set for advanced integrations.
+          Most projects should use `lib.mkTests` or the flake-parts module instead.
+        */
         fixtures =
           { pkgs }:
           import ./core/fixtures.nix {
@@ -87,8 +106,11 @@
           generateDocs = pkgs.writeShellApplication {
             name = "generate-docs";
             text = ''
+              rm -f docs/src/reference/{core,terminal,fixtures,assertions}.md
               cp ${generatedApi.core} docs/src/reference/core.md
               cp ${generatedApi.terminal} docs/src/reference/terminal.md
+              cp ${generatedApi.fixtures} docs/src/reference/fixtures.md
+              cp ${generatedApi.assertions} docs/src/reference/assertions.md
             '';
           };
           docs = pkgs.stdenvNoCC.mkDerivation {
@@ -100,8 +122,10 @@
             ];
             buildPhase = ''
               runHook preBuild
-               cmp docs/src/reference/core.md ${generatedApi.core}
-               cmp docs/src/reference/terminal.md ${generatedApi.terminal}
+                cmp docs/src/reference/core.md ${generatedApi.core}
+                cmp docs/src/reference/terminal.md ${generatedApi.terminal}
+                cmp docs/src/reference/fixtures.md ${generatedApi.fixtures}
+                cmp docs/src/reference/assertions.md ${generatedApi.assertions}
               mkdir -p "$out"
               mdbook build --dest-dir "$out"
               runHook postBuild

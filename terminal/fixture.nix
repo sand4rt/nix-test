@@ -24,9 +24,9 @@
         ```
 
     Starts a command in a persistent terminal with the test workspace as its
-    working directory. Pass a package to run its `meta.mainProgram`, or a command
-    string when arguments are needed. Only one terminal process is active per
-    test.
+    working directory. Pass a package to resolve its executable with `lib.getExe`,
+    or a command string when arguments are needed. Only one terminal process is
+    active per test.
       */
       open =
         command:
@@ -50,9 +50,9 @@
         machine.press keys
         ```
 
-        Sends `keys` to the active terminal. Text is sent literally except
-        for `<leader>`, `<space>`, `<esc>`, `<escape>`, `<enter>`, `<cr>`, `<c-w>`,
-        `<tab>`, and `<bs>`.
+        Sends `keys` to the active terminal. Both backends recognize `<leader>`,
+        `<space>`, `<esc>`, `<escape>`, `<enter>`, `<cr>`, `<tab>`, and `<bs>`.
+        The machine backend additionally recognizes `<c-w>`.
       */
       press = keys: mkAction "keys" { inherit keys; };
 

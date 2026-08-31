@@ -5,6 +5,21 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.container
+  ## `container`
+
+  ```nix
+  container.locate machine name
+  container.start target
+  container.stop target
+  container.restart target
+  container.run target command
+  ```
+
+  `locate` returns a declarative NixOS container locator. The remaining methods
+  create one-shot actions for that container.
+*/
 let
   nodeExpression = name: ''machines[${builtins.toJSON name}]'';
   operation = target: command: mkAction "containerAction" {

@@ -5,6 +5,24 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.network
+  ## `network`
+
+  ```nix
+  network.endpoint {
+    from = machine;
+    host = "server";
+    port = 8080;
+    transport = "tcp";
+  }
+  network.partition { left = [ server ]; right = [ client ]; }
+  network.heal { left = [ server ]; right = [ client ]; }
+  ```
+
+  `host` defaults to `127.0.0.1` and `transport` defaults to `tcp`.
+  Ports must be integers from 1 through 65535. Partition and heal execute once.
+*/
 let
   nodeExpression = name: ''machines[${builtins.toJSON name}]'';
   endpointTarget = node: options:

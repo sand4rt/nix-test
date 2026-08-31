@@ -4,6 +4,15 @@
   mkMatcher,
   ...
 }:
+/**
+  @doc assertions.containers
+  ## Containers
+
+  ```nix
+  expect.toBeRunning container
+  expect.toBeStopped container
+  ```
+*/
 let
   assertion = target: expected: mkAction "machinePredicate" {
     inherit (target) node description;

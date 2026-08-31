@@ -89,16 +89,19 @@
     ```nix
     inputs.tests.lib.mkMatcher {
       accepts = [ "appStatus" ];
-      run = fixtures: target:
-        inputs.tests.lib.mkAction "assertAppStatus" {
-          inherit (target) name;
-        };
+      run = { expect, ... }: target:
+        expect.toBeVisible (inputs.tests.lib.mkLocator {
+          type = "terminalText";
+          text = target.status;
+        });
     }
     ```
 
     Creates a fixture-aware matcher factory. `accepts` lists valid target types;
-    omit it for a matcher that accepts any value. Invalid targets fail during Nix
-    evaluation before a runner is built.
+    omit it for a matcher that accepts any tagged action, locator, or target.
+    Invalid targets fail during Nix evaluation before a runner is built. Compose
+    matchers from runtime-backed locators and matchers unless a runner explicitly
+    supports the custom action type.
   */
   mkMatcher =
     {

@@ -5,6 +5,17 @@
   mkMatcher,
   ...
 }:
+/**
+  @doc assertions.network
+  ## Network endpoints
+
+  ```nix
+  expect.toBeReachable endpoint
+  expect.toBeUnreachable endpoint
+  ```
+
+  Endpoint observations retry until the configured timeout.
+*/
 let
   assertion = target: command: mkAction "machinePredicate" {
     inherit (target) node description;

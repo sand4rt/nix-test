@@ -33,7 +33,7 @@
 
       /**
         @doc test.configure
-        ## `test.configure`
+        ### `test.configure`
 
         ```nix
         test.configure = {
@@ -100,10 +100,11 @@
         ```nix
         testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
           accepts = [ "appStatus" ];
-          run = _fixtures: target:
-            inputs.tests.lib.mkAction "assertAppStatus" {
-              inherit (target) name;
-            };
+          run = { expect, ... }: target:
+            expect.toBeVisible (inputs.tests.lib.mkLocator {
+              type = "terminalText";
+              text = target.status;
+            });
         };
         ```
 

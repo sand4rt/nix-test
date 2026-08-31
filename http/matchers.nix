@@ -4,6 +4,20 @@
   mkAction,
   ...
 }:
+/**
+  @doc assertions.http
+  ## HTTP
+
+  ```nix
+  expect.toHaveStatus expected response
+  expect.toHaveBody response expected
+  expect.toHaveHeader response { name, value }
+  expect.toHaveJsonValue { actual, path, expected }
+  ```
+
+  HTTP matchers repeat the request until it matches or times out. Use them only
+  with idempotent requests; use `http.send` for mutating requests.
+*/
 let
   assertion = target: command: mkAction "machinePredicate" {
     inherit (target) node description;

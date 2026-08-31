@@ -5,6 +5,21 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.service
+  ## `service`
+
+  ```nix
+  service.start target
+  service.stop target
+  service.restart target
+  service.reload target
+  service.logs target
+  ```
+
+  Targets come from `machine.service`, `machine.userService`, or `user.service`.
+  Lifecycle methods execute once; `logs` returns a matcher target.
+*/
 let
   nodeExpression = name: ''machines[${builtins.toJSON name}]'';
   systemctl = target:

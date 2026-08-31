@@ -3,6 +3,16 @@
   mkAction,
   ...
 }:
+/**
+  @doc assertions.users
+  ## Users
+
+  ```nix
+  expect.toBeMemberOf user group
+  ```
+
+  Use `toExist` and `toBeAbsent` for user existence.
+*/
 {
   testing.matchers.toBeMemberOf = fixtures: target: group: mkAction "machinePredicate" {
     inherit (target) node description;

@@ -5,6 +5,44 @@
   mkFixture,
   ...
 }:
+/**
+  @doc fixture.machine
+  ## `machine` and `machines`
+
+  ```nix
+  machine.configure { modules ? [ ]; }
+  machines.configure { server.modules = [ ]; client.modules = [ ]; }
+  machines.node name
+  machine.command command
+  machine.run { command, saveAs }
+  machine.service name
+  machine.userService user name
+  machine.file path
+  machine.directory path
+  machine.symlink path
+  machine.mount path
+  machine.user name
+  machine.container name
+  machine.endpoint.tcp portOrOptions
+  machine.endpoint.udp portOrOptions
+  machine.http.get request
+  machine.open commandOrPackage
+  machine.press keys
+  machine.print
+  machine.getByText text
+  machine.getByPattern pattern
+  machine.getByRegion { left ? 0, top ? 0, width ? null, height ? null }
+  machine.start
+  machine.shutdown
+  machine.reboot
+  machine.crash
+  ```
+
+  `machine` addresses the default VM. `machines.node name` returns the same
+  per-machine interface for a named VM. Lifecycle properties and `print` are
+  actions, not functions. Executable machine actions require a preceding
+  `machine.configure` or `machines.configure` action.
+*/
 let
   session = "nix-test";
   tmux = lib.getExe pkgs.tmux;

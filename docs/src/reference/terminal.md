@@ -55,51 +55,51 @@ string.
 
 ## `getByRegion`
 
-    <span class="backend-example" data-backend="terminal"></span>
+<span class="backend-example" data-backend="terminal"></span>
 
-    ```nix
-    terminal.getByRegion {
-      left = 0;
-      top = 0;
-      width = 80;
-      height = 10;
-    }
-    ```
+```nix
+terminal.getByRegion {
+  left = 0;
+  top = 0;
+  width = 80;
+  height = 10;
+}
+```
 
-    <span class="backend-example" data-backend="machine"></span>
+<span class="backend-example" data-backend="machine"></span>
 
-    ```nix
-    machine.getByRegion {
-      left = 0;
-      top = 0;
-      width = 80;
-      height = 10;
-    }
-    ```
+```nix
+machine.getByRegion {
+  left = 0;
+  top = 0;
+  width = 80;
+  height = 10;
+}
+```
 
-    Selects a rectangle of terminal cells for use with `expect.toEqual`. Trailing
-    blank-cell whitespace is omitted from the selected text.
-    `left` and `top` default to `0`; `width` and `height` default to the remaining
-    visible grid. Coordinates are zero-based.
+Selects a rectangle of terminal cells for use with `expect.toEqual`. Trailing
+blank-cell whitespace is omitted from the selected text.
+`left` and `top` default to `0`; `width` and `height` default to the remaining
+visible grid. Coordinates are zero-based.
 
 ---
 
 ## `getByText`
 
-    <span class="backend-example" data-backend="terminal"></span>
+<span class="backend-example" data-backend="terminal"></span>
 
-    ```nix
-    terminal.getByText text
-    ```
+```nix
+terminal.getByText text
+```
 
-    <span class="backend-example" data-backend="machine"></span>
+<span class="backend-example" data-backend="machine"></span>
 
-    ```nix
-    machine.getByText text
-    ```
+```nix
+machine.getByText text
+```
 
-    Locates literal text in the visible terminal for use with
-    `expect.toBeVisible` on either backend.
+Locates literal text in the visible terminal for use with
+`expect.toBeVisible` on either backend.
 
 ---
 
@@ -118,9 +118,9 @@ machine.open commandOrPackage
 ```
 
     Starts a command in a persistent terminal with the test workspace as its
-    working directory. Pass a package to run its `meta.mainProgram`, or a command
-    string when arguments are needed. Only one terminal process is active per
-    test.
+    working directory. Pass a package to resolve its executable with `lib.getExe`,
+    or a command string when arguments are needed. Only one terminal process is
+    active per test.
 
 ---
 
@@ -138,9 +138,9 @@ terminal.press keys
 machine.press keys
 ```
 
-Sends `keys` to the active terminal. Text is sent literally except
-for `<leader>`, `<space>`, `<esc>`, `<escape>`, `<enter>`, `<cr>`, `<c-w>`,
-`<tab>`, and `<bs>`.
+Sends `keys` to the active terminal. Both backends recognize `<leader>`,
+`<space>`, `<esc>`, `<escape>`, `<enter>`, `<cr>`, `<tab>`, and `<bs>`.
+The machine backend additionally recognizes `<c-w>`.
 
 ---
 

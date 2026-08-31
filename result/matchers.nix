@@ -1,4 +1,17 @@
 { mkAction, ... }:
+/**
+  @doc assertions.results
+  ## Saved results
+
+  ```nix
+  expect.toHaveExitCode expected result
+  expect.toHaveStdout result expected
+  expect.toContainStdout result expected
+  ```
+
+  Result assertions inspect values saved by `machine.run` or `http.send` and do
+  not repeat the original operation.
+*/
 {
   testing.matchers = {
     toHaveExitCode = fixtures: expected: target:

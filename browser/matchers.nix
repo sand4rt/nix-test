@@ -1,4 +1,18 @@
 { mkAction, mkMatcher, ... }:
+/**
+  @doc assertions.browser
+  ## Browser
+
+  ```nix
+  expect.toBeVisibleInBrowser element
+  expect.toBeEnabled element
+  expect.toHaveValue element expected
+  expect.toHaveLocation machine expectedSuffix
+  expect.toHaveTitle machine expectedTitle
+  ```
+
+  Browser assertions retry through Selenium until timeout.
+*/
 let
   browserExpression = name: ''browsers[${builtins.toJSON name}]'';
   find = target: ''find_element(${browserExpression target.node}, ${builtins.toJSON target.strategy}, ${builtins.toJSON target.value})'';

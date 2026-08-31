@@ -3,7 +3,7 @@
   testing.locators.terminal = {
     /**
       @doc terminal-machine.getByRegion
-  ## `getByRegion`
+      ## `getByRegion`
 
       <span class="backend-example" data-backend="terminal"></span>
 
@@ -44,7 +44,7 @@
 
     /**
       @doc terminal-machine.getByText
-  ## `getByText`
+      ## `getByText`
 
       <span class="backend-example" data-backend="terminal"></span>
 

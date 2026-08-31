@@ -4,6 +4,22 @@
   mkMatcher,
   ...
 }:
+/**
+  @doc assertions.services
+  ## Services and command output
+
+  ```nix
+  expect.toBeActive service
+  expect.toBeInactive service
+  expect.toBeFailed service
+  expect.toHaveLog service text
+  expect.toContain target text
+  expect.toSucceed machineCommand
+  ```
+
+  Service targets may be system or user services. `toContain` accepts service
+  logs and machine commands. All observations retry until timeout.
+*/
 let
   assertion = target: command: mkAction "machinePredicate" {
     inherit (target) node description;

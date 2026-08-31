@@ -3,6 +3,21 @@
   mkLocator,
   ...
 }:
+/**
+  @doc fixture.filesystem
+  ## `filesystem`
+
+  ```nix
+  filesystem.path machine path
+  filesystem.file machine path
+  filesystem.directory machine path
+  filesystem.symlink machine path
+  filesystem.mount machine path
+  filesystem.jsonFile machine path
+  ```
+
+  Each method returns a locator observed from the supplied machine.
+*/
 let
   workspace = "/tmp/nix-test";
   pathTarget = machine: path: kind: mkLocator {

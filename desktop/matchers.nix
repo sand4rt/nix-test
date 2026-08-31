@@ -1,4 +1,14 @@
 { mkAction, mkMatcher, ... }:
+/**
+  @doc assertions.desktop
+  ## Desktop
+
+  ```nix
+  expect.toBeVisibleOnDesktop target
+  ```
+
+  Accepts desktop window and desktop text locators.
+*/
 let nodeExpression = name: ''machines[${builtins.toJSON name}]'';
 in
 {
