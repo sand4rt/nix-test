@@ -26,6 +26,9 @@
   machine.endpoint.tcp portOrOptions
   machine.endpoint.udp portOrOptions
   machine.http.get request
+  machine.browser.start
+  machine.browser.open url
+  machine.browser.getByText text
   machine.open commandOrPackage
   machine.press keys
   machine.print

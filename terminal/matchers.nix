@@ -19,13 +19,13 @@ in
     <span class="backend-example" data-backend="terminal"></span>
 
     ```nix
-    expect.toBeVisible (terminal.getByText "ready")
+      (expect (terminal.getByText "ready")).toBeVisible
     ```
 
     <span class="backend-example" data-backend="machine"></span>
 
     ```nix
-    expect.toBeVisible (machine.getByText "ready")
+      (expect (machine.getByText "ready")).toBeVisible
     ```
 
     Passes when the locator's text appears in the visible terminal.
@@ -35,19 +35,13 @@ in
     <span class="backend-example" data-backend="terminal"></span>
 
     ```nix
-    expect.toEqual {
-      actual = terminal.getByRegion region;
-      inherit expected;
-    }
+      (expect (terminal.getByRegion region)).toEqual expected
     ```
 
     <span class="backend-example" data-backend="machine"></span>
 
     ```nix
-    expect.toEqual {
-      actual = machine.getByRegion region;
-      inherit expected;
-    }
+      (expect (machine.getByRegion region)).toEqual expected
     ```
 
     Passes when the selected terminal text equals `expected`. Trailing blank-cell
@@ -69,8 +63,7 @@ in
   };
 
   testing.matchers.toEqual =
-    fixtures:
-    { actual, expected }:
+    fixtures: actual: expected:
     (mkMatcher {
       accepts = [
         "machineRegion"

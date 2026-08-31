@@ -8,7 +8,7 @@
   ## Users
 
   ```nix
-  expect.toBeMemberOf user group
+  (expect user).toBeMemberOf group
   ```
 
   Use `toExist` and `toBeAbsent` for user existence.

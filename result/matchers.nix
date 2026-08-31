@@ -4,9 +4,9 @@
   ## Saved results
 
   ```nix
-  expect.toHaveExitCode expected result
-  expect.toHaveStdout result expected
-  expect.toContainStdout result expected
+  (expect result).toHaveExitCode expected
+  (expect result).toHaveStdout expected
+  (expect result).toContainStdout expected
   ```
 
   Result assertions inspect values saved by `machine.run` or `http.send` and do
@@ -14,7 +14,7 @@
 */
 {
   testing.matchers = {
-    toHaveExitCode = fixtures: expected: target:
+    toHaveExitCode = fixtures: target: expected:
       assert target.type == "commandResult" || target.type == "resultExitCode";
       mkAction "resultAssertion" {
         inherit (target) name description;

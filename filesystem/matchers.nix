@@ -9,16 +9,16 @@
   ## Filesystems and presence
 
   ```nix
-  expect.toExist target
-  expect.toBeAbsent target
-  expect.toBeFile path
-  expect.toBeDirectory path
-  expect.toBeSymlink path
-  expect.toBeMounted path
-  expect.toHaveContent target expected
-  expect.toPointTo target expected
-  expect.toHaveMode target expected
-  expect.toBeOwnedBy target user
+  (expect target).toExist
+  (expect target).toBeAbsent
+  (expect path).toBeFile
+  (expect path).toBeDirectory
+  (expect path).toBeSymlink
+  (expect path).toBeMounted
+  (expect target).toHaveContent expected
+  (expect target).toPointTo expected
+  (expect target).toHaveMode expected
+  (expect target).toBeOwnedBy user
   ```
 
   Presence matchers accept path and user locators where applicable. Filesystem

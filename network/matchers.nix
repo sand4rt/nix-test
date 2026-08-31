@@ -10,8 +10,8 @@
   ## Network endpoints
 
   ```nix
-  expect.toBeReachable endpoint
-  expect.toBeUnreachable endpoint
+  (expect endpoint).toBeReachable
+  (expect endpoint).toBeUnreachable
   ```
 
   Endpoint observations retry until the configured timeout.

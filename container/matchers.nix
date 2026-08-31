@@ -9,8 +9,8 @@
   ## Containers
 
   ```nix
-  expect.toBeRunning container
-  expect.toBeStopped container
+  (expect container).toBeRunning
+  (expect container).toBeStopped
   ```
 */
 let

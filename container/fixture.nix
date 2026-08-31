@@ -11,10 +11,10 @@
 
   ```nix
   container.locate machine name
-  container.start target
-  container.stop target
-  container.restart target
-  container.run target command
+  (machine.container name).start
+  (machine.container name).stop
+  (machine.container name).restart
+  (machine.container name).run command
   ```
 
   `locate` returns a declarative NixOS container locator. The remaining methods

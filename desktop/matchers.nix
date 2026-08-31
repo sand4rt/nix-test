@@ -4,7 +4,7 @@
   ## Desktop
 
   ```nix
-  expect.toBeVisibleOnDesktop target
+  (expect target).toBeVisible
   ```
 
   Accepts desktop window and desktop text locators.

@@ -9,10 +9,10 @@
   ## HTTP
 
   ```nix
-  expect.toHaveStatus expected response
-  expect.toHaveBody response expected
-  expect.toHaveHeader response { name, value }
-  expect.toHaveJsonValue { actual, path, expected }
+  (expect response).toHaveStatus expected
+  (expect response).toHaveBody expected
+  (expect response).toHaveHeader { name, value }
+  (expect response).toHaveJsonValue { path, value }
   ```
 
   HTTP matchers repeat the request until it matches or times out. Use them only
@@ -55,10 +55,10 @@ in
       # Example
 
       ```nix
-      expect.toHaveStatus 200 (machine.http.get "http://localhost/health")
+      (expect (machine.http.get "http://localhost/health")).toHaveStatus 200
       ```
     */
-    toHaveStatus = fixtures: expected: target:
+    toHaveStatus = fixtures: target: expected:
       assertion target (
         curlCommand target "--output /dev/null --write-out '%{http_code}'"
         + " | grep -Fx ${lib.escapeShellArg (toString expected)}"
@@ -73,9 +73,9 @@ in
         + " | tr -d '\\r' | grep -iFx -- ${lib.escapeShellArg "${name}: ${value}"}"
       );
     /** Assert that an HTTP JSON response eventually contains a value at a path. */
-    toHaveJsonValue = fixtures: { actual, path, expected }:
-      assertion actual (
-        curlCommand actual "" + " | ${lib.getExe pkgs.jq} -e --argjson expected ${lib.escapeShellArg (builtins.toJSON expected)} "
+    toHaveJsonValue = fixtures: target: { path, value }:
+      assertion target (
+        curlCommand target "" + " | ${lib.getExe pkgs.jq} -e --argjson expected ${lib.escapeShellArg (builtins.toJSON value)} "
         + lib.escapeShellArg ".${path} == \$expected"
       );
   };

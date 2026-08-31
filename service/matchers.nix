@@ -9,12 +9,12 @@
   ## Services and command output
 
   ```nix
-  expect.toBeActive service
-  expect.toBeInactive service
-  expect.toBeFailed service
-  expect.toHaveLog service text
-  expect.toContain target text
-  expect.toSucceed machineCommand
+  (expect service).toBeActive
+  (expect service).toBeInactive
+  (expect service).toBeFailed
+  (expect service).toHaveLog text
+  (expect target).toContain text
+  (expect machineCommand).toSucceed
   ```
 
   Service targets may be system or user services. `toContain` accepts service
@@ -51,7 +51,7 @@ in
       );
     };
     toHaveLog = fixtures: target: text:
-      fixtures.expect.toContain (fixtures.service.logs target) text;
+      (fixtures.expect (fixtures.service.logs target)).toContain text;
     toContain = fixtures: target: text:
       assert builtins.elem target.type [ "serviceLogs" "machineCommand" ];
       assertion target "${target.command} | grep -F -- ${lib.escapeShellArg text}";

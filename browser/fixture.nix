@@ -11,20 +11,16 @@
   ## `browser`
 
   Browser actions run through Firefox and Selenium on the machine backend.
-  Call `browser.configure machine` before other browser actions.
+  Access a bound browser through `machine.browser`.
 
   ```nix
-  browser.configure machine
-  browser.open machine url
-  browser.getByRole machine role { name ? ""; }
-  browser.getByLabel machine label
-  browser.getByPlaceholder machine placeholder
-  browser.getByText machine text
-  browser.getByTitle machine title
-  browser.click element
-  browser.fill element value
-  browser.clear element
-  browser.press element keys
+  machine.browser.start
+  machine.browser.open url
+  machine.browser.getByRole role { name ? ""; }
+  machine.browser.getByLabel label
+  machine.browser.getByPlaceholder placeholder
+  machine.browser.getByText text
+  machine.browser.getByTitle title
   ```
 
   Locator methods return browser element locators. Action methods execute once.
@@ -35,6 +31,14 @@ let
   locator = node: strategy: value: description:
     let target = { type = "browserElement"; inherit node strategy value description; };
     in mkLocator (target // {
+      click = action target "click" ''${find target}.click()'';
+      fill = input: action target "fill" ''
+        element = ${find target}
+        element.clear()
+        element.send_keys(${builtins.toJSON input})
+      '';
+      clear = action target "clear" ''${find target}.clear()'';
+      press = keys: action target "press" ''${find target}.send_keys(${builtins.toJSON keys})'';
       toBeVisible = mkAction "browserAssertion" {
         inherit node description;
         code = ''WebDriverWait(${browserExpression node}, timeout).until(lambda _: ${find target}.is_displayed())'';
@@ -47,7 +51,12 @@ let
 in
 {
   testing.fixtures.browser = mkFixture (_fixtures: {
-    configure = node: mkAction "browserConfigure" {
+    on = node: {
+      _kind = "locator";
+      type = "browserPage";
+      node = node.name;
+      description = "browser on ${node.name}";
+      start = mkAction "browserConfigure" {
       node = node.name;
       code = ''
         from selenium import webdriver
@@ -83,31 +92,24 @@ in
         service = webdriver.FirefoxService(executable_path=${builtins.toJSON (lib.getExe pkgs.geckodriver)})
         browsers[${builtins.toJSON node.name}] = webdriver.Firefox(options=options, service=service)
       '';
-    };
-    open = node: url: mkAction "browserAction" {
+      };
+      open = url: mkAction "browserAction" {
       node = node.name;
       operation = "open";
       code = ''${browserExpression node.name}.get(${builtins.toJSON url})'';
-    };
-    getByRole = node: role: { name ? "" }:
+      };
+      getByRole = role: { name ? "" }:
       locator node.name "role" "${role}\u0000${name}" "${role} named ${name}";
-    getByLabel = node: label:
+      getByLabel = label:
       locator node.name "label" (
         ''//label[normalize-space(.)=${builtins.toJSON label}]//*[@id][1] | //*[@id=//label[normalize-space(.)=${builtins.toJSON label}]/@for]''
       ) "field labelled ${label}";
-    getByPlaceholder = node: placeholder:
+      getByPlaceholder = placeholder:
       locator node.name "placeholder" "[placeholder=${builtins.toJSON placeholder}]" "field with placeholder ${placeholder}";
-    getByText = node: text:
+      getByText = text:
       locator node.name "text" ''//*[normalize-space(.)=${builtins.toJSON text}]'' "text ${text}";
-    getByTitle = node: title:
+      getByTitle = title:
       locator node.name "title" "[title=${builtins.toJSON title}]" "element titled ${title}";
-    click = target: action target "click" ''${find target}.click()'';
-    fill = target: value: action target "fill" ''
-      element = ${find target}
-      element.clear()
-      element.send_keys(${builtins.toJSON value})
-    '';
-    clear = target: action target "clear" ''${find target}.clear()'';
-    press = target: keys: action target "press" ''${find target}.send_keys(${builtins.toJSON keys})'';
+    };
   });
 }

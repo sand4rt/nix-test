@@ -27,7 +27,7 @@
       }
       ```
 
-      Selects a rectangle of terminal cells for use with `expect.toEqual`. Trailing
+      Selects a rectangle of terminal cells for use with `(expect region).toEqual`. Trailing
       blank-cell whitespace is omitted from the selected text.
       `left` and `top` default to `0`; `width` and `height` default to the remaining
       visible grid. Coordinates are zero-based.
@@ -59,7 +59,7 @@
       ```
 
       Locates literal text in the visible terminal for use with
-      `expect.toBeVisible` on either backend.
+      `(expect text).toBeVisible` on either backend.
     */
     getByText =
       text:

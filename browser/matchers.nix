@@ -4,11 +4,11 @@
   ## Browser
 
   ```nix
-  expect.toBeVisibleInBrowser element
-  expect.toBeEnabled element
-  expect.toHaveValue element expected
-  expect.toHaveLocation machine expectedSuffix
-  expect.toHaveTitle machine expectedTitle
+  (expect element).toBeVisible
+  (expect element).toBeEnabled
+  (expect element).toHaveValue expected
+  (expect machine.browser).toHaveLocation expectedSuffix
+  (expect machine.browser).toHaveTitle expectedTitle
   ```
 
   Browser assertions retry through Selenium until timeout.
@@ -37,15 +37,15 @@ in
       inherit (target) node description;
       code = ''WebDriverWait(${browserExpression target.node}, timeout).until(lambda _: ${find target}.get_attribute("value") == ${builtins.toJSON expected})'';
     };
-    toHaveLocation = fixtures: node: expected: mkAction "browserAssertion" {
-      node = node.name;
+    toHaveLocation = fixtures: target: expected: mkAction "browserAssertion" {
+      node = target.node;
       description = "browser location ${expected}";
-      code = ''WebDriverWait(${browserExpression node.name}, timeout).until(lambda _: ${browserExpression node.name}.current_url.endswith(${builtins.toJSON expected}))'';
+      code = ''WebDriverWait(${browserExpression target.node}, timeout).until(lambda _: ${browserExpression target.node}.current_url.endswith(${builtins.toJSON expected}))'';
     };
-    toHaveTitle = fixtures: node: expected: mkAction "browserAssertion" {
-      node = node.name;
+    toHaveTitle = fixtures: target: expected: mkAction "browserAssertion" {
+      node = target.node;
       description = "browser title ${expected}";
-      code = ''WebDriverWait(${browserExpression node.name}, timeout).until(lambda _: ${browserExpression node.name}.title == ${builtins.toJSON expected})'';
+      code = ''WebDriverWait(${browserExpression target.node}, timeout).until(lambda _: ${browserExpression target.node}.title == ${builtins.toJSON expected})'';
     };
   };
 }

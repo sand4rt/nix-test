@@ -10,11 +10,11 @@
   ## `service`
 
   ```nix
-  service.start target
-  service.stop target
-  service.restart target
-  service.reload target
-  service.logs target
+  (machine.service name).start
+  (machine.service name).stop
+  (machine.service name).restart
+  (machine.service name).reload
+  (machine.service name).logs
   ```
 
   Targets come from `machine.service`, `machine.userService`, or `user.service`.
