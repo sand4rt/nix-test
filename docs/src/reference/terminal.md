@@ -107,7 +107,7 @@ terminal.open commandOrPackage
 machine.open commandOrPackage
 ```
 
-    Starts a command in a persistent terminal with the test workspace as its
+    Starts a command in a persistent terminal with the test filesystem root as its
     working directory. Pass a package to resolve its executable with `lib.getExe`,
     or a command string when arguments are needed. Only one terminal process is
     active per test.
@@ -194,26 +194,3 @@ machine.getByPattern "P.*ready"
 ```
 
 Locates a regular expression in the visible machine terminal.
-
----
-
-## `workspace.path`
-
-```nix
-workspace.path
-```
-
-Placeholder for the test's isolated workspace path. Interpolate it into a
-terminal or machine command; the selected backend replaces it with the
-actual writable path.
-
----
-
-## `workspace.writeFile`
-
-```nix
-workspace.writeFile path content
-```
-
-Writes `content` to a path relative to the isolated workspace, creating
-parent directories as needed.

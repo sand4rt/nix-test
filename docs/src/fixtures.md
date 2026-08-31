@@ -21,7 +21,7 @@ test."service is healthy" = { machine }: [
 | `terminal` | Open and interact with a local terminal application |
 | `machine` | Configure and control one NixOS VM |
 | `machines` | Configure and control named NixOS VMs |
-| `workspace` | Prepare isolated mutable files and directories |
+| `filesystem` | Prepare mutable files and observe machine paths |
 | `service` | Start, stop, restart, and reload services |
 | `filesystem` | Locate files, directories, links, and mounts |
 | `network` | Locate endpoints and partition named machines |
@@ -81,7 +81,6 @@ result once, then make assertions without repeating the operation:
 
 ```nix
 test."creates an item once" = { machine, result }: [
-  (machine.configure { })
   (machine.run {
     command = "example create";
     saveAs = "create";

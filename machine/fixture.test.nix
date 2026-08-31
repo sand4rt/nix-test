@@ -21,13 +21,11 @@
   ];
 
   test."runs machine setup commands" = { machine }: [
-    (machine.configure { modules = [ ]; })
     (machine.command "touch /run/setup-complete")
     (machine.command "test -e /run/setup-complete")
   ];
 
   test."drives a machine terminal" = { machine }: [
-    (machine.configure { modules = [ ]; })
     (machine.open "sh -c 'read value; printf \"received: %s\\n\" \"$value\"; sleep 30'")
     (machine.press "hello<enter>")
     (expect (machine.getByText "received: hello")).toBeVisible
@@ -35,7 +33,6 @@
   ];
 
   test."matches machine terminal regions" = { machine }: [
-    (machine.configure { modules = [ ]; })
     (machine.open "sh -c 'printf \"alpha\\nbeta\\n\"; sleep 30'")
     ((expect (machine.getByRegion {
         width = 5;
@@ -46,15 +43,14 @@
       '')
   ];
 
-  test."uses the machine workspace" = { machine, workspace }: [
-      (machine.configure { })
-      (workspace.writeFile "message.txt" "workspace ready\n")
-      (expect (machine.command "test -e ${workspace.path}/message.txt")).toEventuallySucceed
-      (machine.open "cat message.txt")
-      (expect (machine.getByText "workspace ready")).toBeVisible
+  test."uses the machine filesystem" = { machine, filesystem }: [
+      (filesystem.writeFile "message.txt" "filesystem ready\n")
+      (expect (machine.command "test -e ${filesystem.root}/message.txt")).toEventuallySucceed
+      (machine.open "sh -c 'cat message.txt; sleep 30'")
+      (expect (machine.getByText "filesystem ready")).toBeVisible
     ];
 
-  test."describes observable machine behavior" = { machine, workspace }: [
+  test."describes observable machine behavior" = { machine, filesystem }: [
       (machine.configure {
         modules = [
           {
@@ -75,9 +71,9 @@
         ((expect (machine.file "/run/observable/state")).toHaveContent "ready")
       ])
       (machine.service "observable.service").restart
-      (workspace.makeDirectory "nested")
-      (workspace.writeFile "nested/message" "hello")
-      ((expect (machine.file "${workspace.path}/nested/message")).toHaveContent "hello")
+      (filesystem.makeDirectory "nested")
+      (filesystem.writeFile "nested/message" "hello")
+      ((expect (machine.file "${filesystem.root}/nested/message")).toHaveContent "hello")
     ];
 
   test."supports named machines" = { machines }:
@@ -96,7 +92,6 @@
     ];
 
   test."asserts saved command results" = { machine, result }: [
-      (machine.configure { })
       (machine.run {
         command = "printf ready";
         saveAs = "status";

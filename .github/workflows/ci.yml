@@ -50,11 +50,10 @@ jobs:
           - interop passes
           - custom fixtures and matchers
           - matches visible terminal behavior
-          - prepares files a user can open
           - groups a user journey into steps
-          - writes files at workspace root
-          - writes workspace files
-          - stages workspace trees
+          - writes files at filesystem root
+          - writes filesystem files
+          - stages filesystem trees
           - sends terminal input
           - matches terminal regions
           - applies terminal configuration
@@ -85,7 +84,7 @@ jobs:
           - runs machine setup commands
           - drives a machine terminal
           - matches machine terminal regions
-          - uses the machine workspace
+          - uses the machine filesystem
           - describes observable machine behavior
           - supports named machines
           - asserts saved command results

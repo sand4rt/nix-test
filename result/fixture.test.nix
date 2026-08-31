@@ -1,7 +1,6 @@
 { expect, ... }:
 {
   test."asserts a saved user-visible result" = { machine, result }: [
-    (machine.configure { })
     (machine.run {
       command = "printf 'account created'";
       saveAs = "create-account";

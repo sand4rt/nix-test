@@ -77,7 +77,6 @@ let
   ) (builtins.attrNames ((test.configure or { }).terminal or { }));
   builtInNames = [
     "terminal"
-    "workspace"
     "machine"
     "machines"
     "service"
@@ -180,14 +179,8 @@ let
     builtins.concatMap (
       action: [ action ] ++ (if action.type == "step" then flattenActions action.actions else [ ])
     ) actions;
-  missingMachineConfigurations = builtins.filter (
-    name:
-    let
-      actions = flattenActions cases.${name}.actions;
-    in
-    !(builtins.any (action: action.type == "machineConfigure") actions)
-    && builtins.any (action: builtins.elem action.type machineActionTypes) actions
-  ) (builtins.attrNames cases);
+  hasMachineActions = actions:
+    builtins.any (action: builtins.elem action.type machineActionTypes) actions;
   renderAction =
     action:
     if action.type == "machinePredicate" then
@@ -214,17 +207,36 @@ let
     actions: builtins.filter (action: action.type == "machineConfigure") actions;
   configuredNodes =
     actions:
-    pkgs.lib.foldl' (
-      nodes: action:
-      pkgs.lib.foldlAttrs (
-        result: name: options:
-        result
-        // {
-          ${name}.modules = (result.${name}.modules or [ ]) ++ options.modules;
-        }
-      ) nodes action.nodes
-    ) { } (machineConfigurations actions);
-  workspaceActionTypes = [
+    let
+      configured = pkgs.lib.foldl' (
+        nodes: action:
+        pkgs.lib.foldlAttrs (
+          result: name: options:
+          result
+          // {
+            ${name}.modules = (result.${name}.modules or [ ]) ++ options.modules;
+          }
+        ) nodes action.nodes
+      ) { } (machineConfigurations actions);
+      inferredNames = pkgs.lib.unique (
+        pkgs.lib.concatMap (
+          action:
+          pkgs.lib.optional (action ? node) action.node
+          ++ (action.left or [ ])
+          ++ (action.right or [ ])
+        ) actions
+      );
+    in
+    if configured == { } then
+      builtins.listToAttrs (
+        map (name: {
+          inherit name;
+          value.modules = [ ];
+        }) inferredNames
+      )
+    else
+      configured;
+  filesystemActionTypes = [
     "copyFile"
     "copyTree"
     "makeDirectory"
@@ -233,14 +245,14 @@ let
     "symlink"
     "writeFile"
   ];
-  invalidNamedMachineWorkspaces = builtins.filter (
+  invalidNamedMachineFilesystems = builtins.filter (
     name:
     let
       actions = flattenActions cases.${name}.actions;
       nodes = configuredNodes actions;
     in
     actions != [ ]
-    && builtins.any (action: builtins.elem action.type workspaceActionTypes) actions
+    && builtins.any (action: builtins.elem action.type filesystemActionTypes) actions
     && builtins.any (action: action.type == "machineConfigure") actions
     && !(builtins.hasAttr "machine" nodes)
   ) (builtins.attrNames cases);
@@ -272,13 +284,11 @@ assert pkgs.lib.assertMsg (unknownCaseFixtures == [ ])
   "nix-test: tests request unknown fixtures: ${builtins.concatStringsSep ", " unknownCaseFixtures}";
 assert pkgs.lib.assertMsg (invalidCases == [ ])
   "nix-test: tests must return only actions created with lib.mkAction: ${builtins.concatStringsSep ", " invalidCases}";
-assert pkgs.lib.assertMsg (missingMachineConfigurations == [ ])
-  "nix-test: machine actions require machine.configure or machines.configure: ${builtins.concatStringsSep ", " missingMachineConfigurations}";
-assert pkgs.lib.assertMsg (invalidNamedMachineWorkspaces == [ ])
-  "nix-test: workspace actions in machine tests require the default machine; named-machine workspace staging is not yet supported: ${builtins.concatStringsSep ", " invalidNamedMachineWorkspaces}";
+assert pkgs.lib.assertMsg (invalidNamedMachineFilesystems == [ ])
+  "nix-test: filesystem mutations in machine tests require the default machine; named-machine staging is not yet supported: ${builtins.concatStringsSep ", " invalidNamedMachineFilesystems}";
 builtins.mapAttrs (
   name: case:
-  if builtins.any (action: action.type == "machineConfigure") (flattenActions case.actions) then
+  if hasMachineActions (flattenActions case.actions) then
     let
       actions = case.actions;
       flatActions = flattenActions actions;

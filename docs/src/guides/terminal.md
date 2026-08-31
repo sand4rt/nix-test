@@ -5,9 +5,9 @@ and TUI behavior that depends on terminal dimensions, keyboard input, cursor
 movement, or visible screen contents.
 
 ```nix
-test."opens a document" = { terminal, workspace }: [
-  (workspace.writeFile "example.txt" "hello\n")
-  (terminal.open "${editor} ${workspace.path}/example.txt")
+test."opens a document" = { terminal, filesystem }: [
+  (filesystem.writeFile "example.txt" "hello\n")
+  (terminal.open "${editor} ${filesystem.root}/example.txt")
   (expect (terminal.getByText "hello")).toBeVisible
   (terminal.press "<esc>")
 ];
@@ -25,7 +25,7 @@ terminal.open pkgs.hello
 Use a command string when arguments are required:
 
 ```nix
-terminal.open "${pkgs.lib.getExe application} --config ${workspace.path}/config.toml"
+terminal.open "${pkgs.lib.getExe application} --config ${filesystem.root}/config.toml"
 ```
 
 ## Send Keyboard Input

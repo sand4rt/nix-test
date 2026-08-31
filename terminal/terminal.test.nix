@@ -1,23 +1,23 @@
 { pkgs, expect, ... }:
 {
-  test."writes files at workspace root" = { terminal, workspace }: [
-      (workspace.writeFile "message.txt" "root file ready\n")
+  test."writes files at filesystem root" = { terminal, filesystem }: [
+      (filesystem.writeFile "message.txt" "root file ready\n")
       (terminal.open "${pkgs.coreutils}/bin/cat message.txt")
       (expect (terminal.getByText "root file ready")).toBeVisible
     ];
 
-  test."writes workspace files" = { terminal, workspace }: [
-      (workspace.writeFile "nested/message.txt" "workspace ready\n")
+  test."writes filesystem files" = { terminal, filesystem }: [
+      (filesystem.writeFile "nested/message.txt" "filesystem ready\n")
       (terminal.open "${pkgs.coreutils}/bin/cat nested/message.txt")
-      (expect (terminal.getByText "workspace ready")).toBeVisible
+      (expect (terminal.getByText "filesystem ready")).toBeVisible
     ];
 
-  test."stages workspace trees" = { terminal, workspace }: [
-      (workspace.makeDirectory "nested")
-      (workspace.copyFile ./terminal.test.nix "nested/source.nix")
-      (workspace.symlink "nested/source.nix" "source-link.nix")
-      (workspace.setMode "nested/source.nix" "0600")
-      (workspace.remove "source-link.nix")
+  test."stages filesystem trees" = { terminal, filesystem }: [
+      (filesystem.makeDirectory "nested")
+      (filesystem.copyFile ./terminal.test.nix "nested/source.nix")
+      (filesystem.symlinkFile "nested/source.nix" "source-link.nix")
+      (filesystem.setMode "nested/source.nix" "0600")
+      (filesystem.remove "source-link.nix")
       (terminal.open "${pkgs.coreutils}/bin/stat -c '%a %n' nested/source.nix")
       (expect (terminal.getByText "600 nested/source.nix")).toBeVisible
     ];

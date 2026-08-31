@@ -63,9 +63,9 @@
         ## `testing.fixtures`
 
         ```nix
-        testing.fixtures.app = inputs.tests.lib.mkFixture ({ terminal, workspace, ... }: {
+        testing.fixtures.app = inputs.tests.lib.mkFixture ({ terminal, filesystem, ... }: {
           open = file: [
-            (workspace.writeFile file "")
+            (filesystem.writeFile file "")
             (terminal.open file)
           ];
         });

@@ -23,7 +23,7 @@
         machine.open commandOrPackage
         ```
 
-    Starts a command in a persistent terminal with the test workspace as its
+    Starts a command in a persistent terminal with the test filesystem root as its
     working directory. Pass a package to resolve its executable with `lib.getExe`,
     or a command string when arguments are needed. Only one terminal process is
     active per test.

@@ -2,19 +2,19 @@
 
 ## Isolated Workspaces
 
-`workspace` prepares mutable files under an isolated runtime directory:
+`filesystem` prepares mutable files under an isolated runtime directory:
 
 ```nix
-test."reads configuration" = { terminal, workspace }: [
-  (workspace.writeFile "config.toml" ''
+test."reads configuration" = { terminal, filesystem }: [
+  (filesystem.writeFile "config.toml" ''
     greeting = "Hello"
   '')
-  (terminal.open "${application} --config ${workspace.path}/config.toml")
+  (terminal.open "${application} --config ${filesystem.root}/config.toml")
   (expect (terminal.getByText "Hello")).toBeVisible
 ];
 ```
 
-Paths are relative to the workspace. Absolute paths and parent traversal are
+Paths are relative to the filesystem root. Absolute paths and parent traversal are
 rejected during Nix evaluation. Other actions include `makeDirectory`,
 `copyFile`, `copyTree`, `symlink`, `setMode`, and `remove`.
 

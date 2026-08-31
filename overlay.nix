@@ -54,7 +54,7 @@ let
           ]
           ++ test.actions
         ) actions;
-        workspaceSources = builtins.concatMap (
+        filesystemSources = builtins.concatMap (
           action: final.lib.optional (action ? source) action.source
         ) testActions;
         script = final.writeText "${name}-actions.json" (builtins.toJSON {
@@ -67,8 +67,8 @@ let
 
           from expect import assert_region, assert_text
           from terminal import Terminal
-          from workspace import write_file
-          from workspace import apply_workspace_action
+          from filesystem import write_file
+          from filesystem import apply_filesystem_action
 
 
           def run_action(action, terminal, fixture, spec):
@@ -80,7 +80,7 @@ let
               elif action_type == "writeFile":
                   write_file(fixture, action)
               elif action_type in {"makeDirectory", "copyFile", "copyTree", "symlink", "setMode", "removePath"}:
-                  apply_workspace_action(fixture, action)
+                  apply_filesystem_action(fixture, action)
               elif action_type == "open":
                   terminal.open(action["command"], fixture, spec["rows"], spec["columns"])
               elif action_type == "keys":
@@ -112,7 +112,7 @@ let
               main()
         '';
         terminal = final.writeTextDir "tui_test/terminal.py" terminalFixture.runtime;
-        workspace = final.writeTextDir "tui_test/workspace.py" /* python */ ''
+        filesystem = final.writeTextDir "tui_test/filesystem.py" /* python */ ''
           from pathlib import Path
           import shutil
 
@@ -123,16 +123,16 @@ let
               path.parent.mkdir(parents=True, exist_ok=True)
               resolved = path.resolve()
               if root not in resolved.parents:
-                  raise ValueError(f"workspace path escapes fixture: {action['path']}")
+                  raise ValueError(f"filesystem path escapes fixture: {action['path']}")
               path.write_text(action["content"])
 
 
-          def apply_workspace_action(fixture, action):
+          def apply_filesystem_action(fixture, action):
               root = Path(fixture).resolve()
               path = root / action["path"]
               parent = path.parent.resolve()
               if root not in parent.parents and parent != root:
-                  raise ValueError(f"workspace path escapes fixture: {action['path']}")
+                  raise ValueError(f"filesystem path escapes fixture: {action['path']}")
               action_type = action["type"]
               if action_type == "makeDirectory":
                   path.mkdir(parents=True, exist_ok=True)
@@ -140,12 +140,12 @@ let
                   path.parent.mkdir(parents=True, exist_ok=True)
                   resolved = path.resolve()
                   if root not in resolved.parents:
-                      raise ValueError(f"workspace path escapes fixture: {action['path']}")
+                      raise ValueError(f"filesystem path escapes fixture: {action['path']}")
                   shutil.copyfile(action["source"], path)
               elif action_type == "copyTree":
                   resolved = path.resolve()
                   if root not in resolved.parents:
-                      raise ValueError(f"workspace path escapes fixture: {action['path']}")
+                      raise ValueError(f"filesystem path escapes fixture: {action['path']}")
                   shutil.copytree(action["source"], path, dirs_exist_ok=True)
               elif action_type == "symlink":
                   path.parent.mkdir(parents=True, exist_ok=True)
@@ -154,7 +154,7 @@ let
               elif action_type == "setMode":
                   resolved = path.resolve()
                   if root not in resolved.parents:
-                      raise ValueError(f"workspace path escapes fixture: {action['path']}")
+                      raise ValueError(f"filesystem path escapes fixture: {action['path']}")
                   path.chmod(int(action["mode"], 8))
               elif action_type == "removePath":
                   if path.is_dir() and not path.is_symlink():
@@ -183,12 +183,12 @@ let
               pythonPackages.pyte
             ]))
           ];
-          inherit workspaceSources;
+          inherit filesystemSources;
         }
         ''
           export HOME="$TMPDIR/home"
           mkdir -p "$HOME" "$TMPDIR/project"
-          PYTHONPATH=${runner}/tui_test:${terminal}/tui_test:${workspace}/tui_test:${locators}/tui_test:${expect}/tui_test:$PYTHONPATH python ${runner}/tui_test/runner.py ${script} "$TMPDIR/project"
+          PYTHONPATH=${runner}/tui_test:${terminal}/tui_test:${filesystem}/tui_test:${locators}/tui_test:${expect}/tui_test:$PYTHONPATH python ${runner}/tui_test/runner.py ${script} "$TMPDIR/project"
           touch "$out"
         '';
   /** @doc testers.testCase

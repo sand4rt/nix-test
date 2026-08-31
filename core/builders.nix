@@ -4,9 +4,9 @@
     ## `lib.mkFixture`
 
     ```nix
-    inputs.tests.lib.mkFixture ({ terminal, workspace, ... }: {
+    inputs.tests.lib.mkFixture ({ terminal, filesystem, ... }: {
       open = file: [
-        (workspace.writeFile file "")
+        (filesystem.writeFile file "")
         (terminal.open file)
       ];
     })

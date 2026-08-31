@@ -43,20 +43,21 @@
 
   `machine` addresses the default VM. `machines.node name` returns the same
   per-machine interface for a named VM. Lifecycle properties and `print` are
-  actions, not functions. Executable machine actions require a preceding
-  `machine.configure` or `machines.configure` action.
+  actions, not functions. The default VM needs no explicit configuration.
+  Use `machine.configure` to add NixOS modules and `machines.configure` to define
+  named-machine topology.
 */
 let
   session = "nix-test";
   tmux = lib.getExe pkgs.tmux;
-  workspace = "/tmp/nix-test";
-  resolveWorkspace = builtins.replaceStrings [ "$fixture" ] [ workspace ];
+  filesystemRoot = "/tmp/nix-test";
+  resolveFilesystemRoot = builtins.replaceStrings [ "$fixture" ] [ filesystemRoot ];
   nodeExpression = name: ''machines[${builtins.toJSON name}]'';
   commandAction =
     node: command:
     mkAction "machineAssertion" {
       inherit node;
-      code = "${nodeExpression node}.succeed(${builtins.toJSON (resolveWorkspace command)})";
+      code = "${nodeExpression node}.succeed(${builtins.toJSON (resolveFilesystemRoot command)})";
     };
   keyNames = {
     "<bs>" = "BSpace";
@@ -97,7 +98,7 @@ let
       command =
         command:
         let
-          resolved = resolveWorkspace command;
+          resolved = resolveFilesystemRoot command;
         in
         mkAction "machineCommand" {
           node = name;
@@ -111,7 +112,7 @@ let
           command,
           saveAs,
         }:
-        let resolved = resolveWorkspace command;
+        let resolved = resolveFilesystemRoot command;
         in mkAction "machineResult" {
           node = name;
           inherit saveAs;
@@ -140,7 +141,7 @@ let
         _kind = "locator";
         type = "path";
         node = name;
-        path = resolveWorkspace path;
+        path = resolveFilesystemRoot path;
         kind = "path";
         description = "path ${path}";
       };
@@ -273,11 +274,11 @@ let
       open =
         command:
         let
-          executable = resolveWorkspace (if builtins.isString command then command else lib.getExe command);
+          executable = resolveFilesystemRoot (if builtins.isString command then command else lib.getExe command);
         in
         commandAction name (
-          "mkdir -p ${workspace}"
-          + " && ${tmux} new-session -d -x 140 -y 42 -c ${workspace} -s ${sessionName} "
+          "mkdir -p ${filesystemRoot}"
+          + " && ${tmux} new-session -d -x 140 -y 42 -c ${filesystemRoot} -s ${sessionName} "
           + lib.escapeShellArg executable
         );
       press = keys: commandAction name (sendKeys sessionName keys);

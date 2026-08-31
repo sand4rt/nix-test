@@ -28,9 +28,9 @@ serializable.
 ## `lib.mkFixture`
 
 ```nix
-inputs.tests.lib.mkFixture ({ terminal, workspace, ... }: {
+inputs.tests.lib.mkFixture ({ terminal, filesystem, ... }: {
   open = file: [
-    (workspace.writeFile file "")
+    (filesystem.writeFile file "")
     (terminal.open file)
   ];
 })
@@ -216,9 +216,9 @@ Constructs a named test-case value for callers using the overlay API.
 ## `testing.fixtures`
 
 ```nix
-testing.fixtures.app = inputs.tests.lib.mkFixture ({ terminal, workspace, ... }: {
+testing.fixtures.app = inputs.tests.lib.mkFixture ({ terminal, filesystem, ... }: {
   open = file: [
-    (workspace.writeFile file "")
+    (filesystem.writeFile file "")
     (terminal.open file)
   ];
 });

@@ -55,7 +55,7 @@ assert fails (
 assert fails (terminalInterface.implement "test" (terminalImplementation // { press = { }; }));
 assert fails (terminalInterface.implement "test" (terminalImplementation // { print = _: { }; }));
 assert
-  (builtInFixtures.machine.command "test -e ${builtInFixtures.workspace.path}/file").command
+  (builtInFixtures.machine.command "test -e ${builtInFixtures.filesystem.root}/file").command
   == "test -e /tmp/nix-test/file";
 assert
   ((builtInFixtures.expect (builtInFixtures.machine.command "true")).toFail).code
@@ -68,9 +68,9 @@ assert
 assert
   ((builtInFixtures.expect ((builtInFixtures.machines.node "server").file "/run/ready")).toExist)
   .command == "test -e /run/ready";
-assert fails (builtInFixtures.workspace.writeFile "../escape" "no");
-assert fails (builtInFixtures.workspace.remove "");
-assert fails (builtInFixtures.workspace.setMode "." "0700");
+assert fails (builtInFixtures.filesystem.writeFile "../escape" "no");
+assert fails (builtInFixtures.filesystem.remove "");
+assert fails (builtInFixtures.filesystem.setMode "." "0700");
 assert fails (builtInFixtures.network.endpoint {
   from = builtInFixtures.machine;
   port = 0;
@@ -128,10 +128,11 @@ assert fails (mkTests {
     (builtInFixtures.expect (builtInFixtures.terminal.getByText "wrong target")).toFail
   ];
 });
-assert fails (mkTests {
+assert
+  (mkTests {
   inherit pkgs;
   test.sample = { machine, ... }: [ (machine.command "true") ];
-});
+  }).sample.type == "derivation";
 assert fails (mkTests {
   inherit pkgs;
   test.sample = { expect }: [ expect ];

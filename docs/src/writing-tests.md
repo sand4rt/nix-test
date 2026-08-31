@@ -4,9 +4,9 @@ Tests are named attributes whose values are callbacks. A callback receives the
 fixtures it requests and returns an ordered list of actions.
 
 ```nix
-test."saves the document" = { terminal, workspace }: [
-  (workspace.writeFile "document.txt" "draft\n")
-  (terminal.open "${editor} ${workspace.path}/document.txt")
+test."saves the document" = { terminal, filesystem }: [
+  (filesystem.writeFile "document.txt" "draft\n")
+  (terminal.open "${editor} ${filesystem.root}/document.txt")
   (expect (terminal.getByText "draft")).toBeVisible
   (terminal.press "<esc>")
 ];
@@ -30,7 +30,7 @@ are written in the same order a user or operator would perform them.
 Fixtures describe the boundary under test. Request only what the test uses:
 
 ```nix
-{ terminal, workspace }:
+{ terminal, filesystem }:
 ```
 
 Use `terminal` for local command-line applications and `machine` or `machines`

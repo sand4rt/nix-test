@@ -68,9 +68,19 @@ filesystem.directory machine path
 filesystem.symlink machine path
 filesystem.mount machine path
 filesystem.jsonFile machine path
+filesystem.root
+filesystem.writeFile relativePath content
+filesystem.makeDirectory relativePath
+filesystem.copyFile source relativeDestination
+filesystem.copyTree source relativeDestination
+filesystem.symlinkFile target relativeLinkPath
+filesystem.setMode relativePath mode
+filesystem.remove relativePath
 ```
 
-Each method returns a locator observed from the supplied machine.
+Locator methods observe paths on a supplied machine. Mutation methods prepare
+files under an isolated runtime root shared by terminal and default-machine
+tests. Relative paths cannot be empty, absolute, `.`, or contain `..`.
 
 ---
 
@@ -131,8 +141,9 @@ machine.crash
 
 `machine` addresses the default VM. `machines.node name` returns the same
 per-machine interface for a named VM. Lifecycle properties and `print` are
-actions, not functions. Executable machine actions require a preceding
-`machine.configure` or `machines.configure` action.
+actions, not functions. The default VM needs no explicit configuration.
+Use `machine.configure` to add NixOS modules and `machines.configure` to define
+named-machine topology.
 
 ---
 
@@ -192,21 +203,3 @@ user.service target serviceName
 
 `locate` returns a user locator. `run` executes a command once as that user,
 while `service` returns a user-level service locator.
-
----
-
-## `workspace`
-
-```nix
-workspace.path
-workspace.writeFile relativePath content
-workspace.makeDirectory relativePath
-workspace.copyFile source relativeDestination
-workspace.copyTree source relativeDestination
-workspace.symlink target relativeLinkPath
-workspace.setMode relativePath mode
-workspace.remove relativePath
-```
-
-Workspace paths are isolated and mutable at runtime. Relative paths must be
-non-empty and cannot be absolute, `.`, or contain a `..` component.

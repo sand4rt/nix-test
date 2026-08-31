@@ -30,10 +30,6 @@ let
     ../service/fixture.nix
     ../user/fixture.nix
   ];
-  workspaceModule = import ../workspace/fixture.nix {
-    inherit lib pkgs;
-    inherit (builders) mkAction mkFixture;
-  };
   terminalLocators = import ../terminal/locators.nix {
     inherit (builders) mkLocator;
   };
@@ -49,7 +45,6 @@ let
   builtInFixtureFactories = {
     inherit (terminalModule.testing.fixtures) terminal;
     inherit (machineModule.testing.fixtures) machine machines;
-    inherit (workspaceModule.testing.fixtures) workspace;
   }
   // builtins.foldl' (acc: module: acc // module.testing.fixtures) { } fixtureModules;
   terminalMatchers = import ../terminal/matchers.nix {

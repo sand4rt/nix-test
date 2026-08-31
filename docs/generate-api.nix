@@ -12,7 +12,6 @@ let
     ../machine/fixture.nix
     ../machine/locators.nix
     ../machine/matchers.nix
-    ../workspace/fixture.nix
     ../expect/fixture.nix
     ../browser/fixture.nix
     ../browser/matchers.nix
@@ -93,7 +92,6 @@ let
       entry.name == "expect.terminal-machine"
       || lib.hasPrefix "terminal." entry.name
       || lib.hasPrefix "terminal-machine." entry.name
-      || lib.hasPrefix "workspace." entry.name
       || entry.name == "expect.machine-command"
       || lib.hasPrefix "machine." entry.name;
     fixtures = entry: lib.hasPrefix "fixture." entry.name;
@@ -120,7 +118,7 @@ let
     ++ builtins.filter (
       entry: entry.name == "expect.machine-command" || lib.hasPrefix "machine." entry.name
     ) entries
-    ++ builtins.filter (entry: lib.hasPrefix "workspace." entry.name) entries;
+    ;
   assertionEntries = builtins.filter categories.assertions entries;
 in
 assert lib.assertMsg (entries != [ ]) "No @doc entries found";

@@ -1,7 +1,8 @@
 # NixOS Machines
 
-Use `machine` when behavior depends on a NixOS configuration. Every machine test
-starts with `machine.configure`, which selects the NixOS VM backend.
+Use `machine` when behavior depends on a NixOS VM. Machine actions automatically
+create an empty default VM. Add `machine.configure` only when the test needs
+NixOS modules.
 
 ```nix
 test."service becomes healthy" = { machine }: [

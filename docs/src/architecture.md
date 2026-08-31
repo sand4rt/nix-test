@@ -45,7 +45,7 @@ The built-in fixture directories are:
 browser/     container/   desktop/      expect/
 filesystem/  http/        machine/      network/
 result/      service/     step/         terminal/
-user/        workspace/
+user/        filesystem/
 ```
 
 `fixture.nix` defines the injected fixture. A fixture directory may additionally
