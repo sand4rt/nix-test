@@ -1,4 +1,26 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const landingPage = document.querySelector(".landing-page");
+  if (landingPage) {
+    document.body.classList.add("landing-page-active");
+
+    const copyButton = landingPage.querySelector(".landing-copy");
+    const code = landingPage.querySelector(".landing-code-card code");
+    copyButton?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(code.textContent);
+        copyButton.setAttribute("aria-label", "Copied example code");
+        copyButton.title = "Copied";
+        window.setTimeout(() => {
+          copyButton.setAttribute("aria-label", "Copy example code");
+          copyButton.title = "Copy code";
+        }, 1500);
+      } catch {
+        copyButton.setAttribute("aria-label", "Could not copy example code");
+        copyButton.title = "Copy unavailable";
+      }
+    });
+  }
+
   const markers = [...document.querySelectorAll(".backend-example")];
 
   for (let index = 0; index < markers.length; index += 2) {
