@@ -23,7 +23,6 @@ test."service is healthy" = { machine }: [
 | `machines` | Configure and control named NixOS VMs |
 | `filesystem` | Prepare mutable files and observe machine paths |
 | `service` | Start, stop, restart, and reload services |
-| `filesystem` | Locate files, directories, links, and mounts |
 | `network` | Locate endpoints and partition named machines |
 | `http` | Observe idempotent requests or send one request once |
 | `user` | Locate users and run commands as a user |
@@ -31,7 +30,9 @@ test."service is healthy" = { machine }: [
 | `browser` | Interact through accessibility-oriented browser locators |
 | `desktop` | Locate windows and text and send desktop input |
 | `result` | Inspect saved command and HTTP results |
-| `expect` | Apply matchers to observable targets |
+
+`expect` is a module argument, not a test fixture. Import it at module scope and
+use it with targets returned by fixtures.
 
 ## Locators
 

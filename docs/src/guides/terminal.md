@@ -7,7 +7,7 @@ movement, or visible screen contents.
 ```nix
 test."opens a document" = { terminal, filesystem }: [
   (filesystem.writeFile "example.txt" "hello\n")
-  (terminal.open "${editor} ${filesystem.root}/example.txt")
+  (terminal.open "${pkgs.lib.getExe pkgs.neovim} ${filesystem.root}/example.txt")
   (expect (terminal.getByText "hello")).toBeVisible
   (terminal.press "<esc>")
 ];
@@ -25,7 +25,7 @@ terminal.open pkgs.hello
 Use a command string when arguments are required:
 
 ```nix
-terminal.open "${pkgs.lib.getExe application} --config ${filesystem.root}/config.toml"
+terminal.open "${pkgs.lib.getExe pkgs.neovim} -u NONE ${filesystem.root}/example.txt"
 ```
 
 ## Send Keyboard Input
