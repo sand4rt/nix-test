@@ -14,24 +14,23 @@ recursive fixture set
         v
 ordered action values
         |
-        +-- no machine.configure --> JSON action document
+        +-- no machineConfigure action --> JSON action document
         |                           --> pexpect/pyte PTY runner
         |
-        +-- machine.configure ----> NixOS modules and test-driver script
+        +-- machineConfigure action ----> NixOS modules and test-driver script
                                     --> NixOS test driver
 ```
 
-Nix functions construct ordered action values. A test containing
-`machine.configure` selects the machine backend; every other test uses the
-standalone terminal backend. Terminal checks encode their actions as JSON and
+Nix functions construct ordered action values. A test containing the action
+produced by `machine.configure` or `machines.configure` selects the machine
+backend; every other test uses the standalone terminal backend. Terminal checks encode their actions as JSON and
 execute generated Python runtime modules in a derivation. Machine checks add the
 configured modules to a NixOS test and render the remaining actions into its
 test-driver script.
 
-Consequently, a test using any `machine` operation must include
-`machine.configure`, even when it only uses methods from the shared terminal
-interface. Without that action, the test is compiled for the standalone
-terminal runner, which cannot execute machine actions.
+Consequently, any executable machine-backed action requires one of those
+configuration actions. Merely constructing a machine locator does not select a
+backend.
 
 Test orchestration and plugin resolution live under `core`. Every built-in
 fixture owns a top-level directory containing its fixture, matchers, locators,

@@ -1,11 +1,9 @@
 # Getting Started
 
-Nix Test turns each named test into a flake check. Tests are ordinary attribute
-sets, so they can be declared inline, imported from files, and merged with `//`.
+This guide adds Nix Test to a flake, puts the test in its own file, and runs it
+as a normal flake check.
 
-## Flake-parts
-
-Add Nix Test as an input and import its module:
+## Add Nix Test
 
 ```nix
 {
@@ -23,289 +21,46 @@ Add Nix Test as an input and import its module:
   outputs = inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [ inputs.tests.flakeModules.default ];
-      systems = [ "aarch64-linux" "x86_64-linux" ];
+      systems = [ "x86_64-linux" ];
 
-      perSystem =
-        { pkgs, ... }:
-        {
-          test."shows greeting" = { terminal, expect }: [
-            (terminal.open pkgs.hello)
-            (expect.toBeVisible (terminal.getByText "Hello"))
-          ];
-        };
+      perSystem = { ... }: {
+        imports = [ ./tests/hello.test.nix ];
+      };
     };
 }
 ```
 
-The attribute name is both the test name and its check name. There is no test
-constructor to import.
+Change the system when your machine uses another supported architecture.
 
-## Configuration
+## Write A Test
 
-Use `test.configure` to set defaults for every test in the current `perSystem`:
-
-```nix
-test.configure = {
-  timeout = 30;
-  terminal = {
-    columns = 80;
-    rows = 24;
-  };
-};
-```
-
-All fields are optional. For the standalone terminal backend, the defaults are a
-15-second assertion timeout and a terminal measuring 140 columns by 42 rows.
-
-## Plain Flakes
-
-Without flake-parts, pass the test attribute set directly to `lib.mkTests`:
+Create `tests/hello.test.nix`:
 
 ```nix
-let
-  system = "x86_64-linux";
-  pkgs = import inputs.nixpkgs { inherit system; };
-in
-{
-  checks.${system} = inputs.tests.lib.mkTests {
-    inherit pkgs;
-    test.configure.timeout = 30;
-    test."shows greeting" = { terminal, expect }: [
-      (terminal.open pkgs.hello)
-      (expect.toBeVisible (terminal.getByText "Hello"))
-    ];
-  };
-}
-```
-
-The optional `fixtures` and `matchers` arguments use the same format as the
-flake-parts plugin options.
-
-## Package Outputs
-
-Use a package output directly so the test executes the exact store path built by
-the flake:
-
-```nix
-perSystem =
-  { config, pkgs, ... }:
-  {
-    packages.default = pkgs.callPackage ./package.nix { };
-
-    test."prints its version" = { terminal, expect }: [
-      (terminal.open "${pkgs.lib.getExe config.packages.default} --version")
-      (expect.toBeVisible (terminal.getByText "my-app"))
-    ];
-  };
-```
-
-When no arguments are needed, pass the package itself:
-
-```nix
-terminal.open config.packages.default
-```
-
-`terminal.open` resolves the package's `meta.mainProgram` with `lib.getExe`. Use
-a command string when arguments are needed, as in the version example above.
-
-Use `lib.getExe'` when the binary name differs from the package's main program:
-
-```nix
-terminal.open (pkgs.lib.getExe' package "program-name")
-```
-
-## Workspace Files
-
-Use `workspace` for mutable files created specifically for a test:
-
-```nix
-test."reads a config file" =
-  { terminal, workspace, expect }:
-  [
-    (workspace.writeFile "config.toml" ''
-      greeting = "Hello"
-    '')
-    (terminal.open "${pkgs.lib.getExe my-package} --config ${workspace.path}/config.toml")
-    (expect.toBeVisible (terminal.getByText "Hello"))
-  ];
-```
-
-`workspace.path` is replaced by the isolated runtime directory. Package
-dependencies should use `terminal.open package` or explicit store paths, not
-`PATH`.
-
-## NixOS Modules
-
-Use `machine.configure` to select the machine backend and pass any NixOS
-modules. Commands run on the resulting machine:
-
-```nix
-test."starts the service" = { machine, expect }: [
-  (machine.configure {
-    modules = [
-      self.nixosModules.default
-      { services.my-service.enable = true; }
-    ];
-  })
-
-  (expect.toBeActive (machine.service "my-service.service"))
-];
-```
-
-Use machine tests for services, users, permissions, networking, and interactions
-between NixOS modules. Include `(machine.configure { })` when no additional
-modules are needed.
-
-Prefer semantic locators for services and files. Their matchers retry until the
-configured timeout:
-
-```nix
-(expect.toBeActive (machine.service "my-service.service"))
-(expect.toExist (machine.file "/run/my-service/ready"))
-(expect.toBeAbsent (machine.file "/run/my-service/starting"))
-```
-
-Use `expect.toEventuallySucceed (machine.command command)` when no semantic
-locator describes the public behavior.
-
-## Home Manager Modules
-
-Home Manager modules are tested through Home Manager's NixOS integration. Add
-Home Manager to the consumer flake:
-
-```nix
-inputs.home-manager = {
-  url = "github:nix-community/home-manager";
-  inputs.nixpkgs.follows = "nixpkgs";
-};
-```
-
-Import its NixOS module and configure a test user:
-
-```nix
-test."activates the user configuration" = { machine, expect }: [
-  (machine.configure {
-    modules = [
-      inputs.home-manager.nixosModules.home-manager
-      {
-        users.users.test = {
-          isNormalUser = true;
-          home = "/home/test";
-        };
-
-        home-manager.useGlobalPkgs = true;
-        home-manager.useUserPackages = true;
-        home-manager.users.test = {
-          imports = [ self.homeModules.default ];
-          home.stateVersion = "25.05";
-        };
-      }
-    ];
-  })
-
-  (machine.command "test -e /home/test/.config/my-app/config.toml")
-];
-```
-
-Choose `home.stateVersion` according to the project being tested.
-
-## Separate Test Files
-
-Colocate tests with the code they cover using a `*.test.nix` suffix:
-
-```text
-src/
-├── terminal.nix
-└── terminal.test.nix
-```
-
-The test file is a per-system module:
-
-```nix
-# src/terminal.test.nix
 { pkgs, ... }:
 {
-  test."shows greeting" = { terminal, expect }: [
+  test."shows a greeting" = { terminal, expect }: [
     (terminal.open pkgs.hello)
     (expect.toBeVisible (terminal.getByText "Hello"))
   ];
 }
 ```
 
-Import one file:
+The attribute name is both the test name and its flake check name. The callback
+requests the fixtures it needs and returns actions in execution order.
 
-```nix
-perSystem = { ... }: {
-  imports = [ ./src/terminal.test.nix ];
-};
+## Run The Test
+
+```sh
+nix build '.#checks.x86_64-linux."shows a greeting"' --no-link -L
 ```
 
-Import each colocated test module:
-
-```nix
-perSystem = { ... }: {
-  imports = [
-    ./src/terminal.test.nix
-    ./modules/service.test.nix
-  ];
-};
-```
-
-## Plugins
-
-Plugins are flake-parts modules that declare custom fixture and matcher options:
-
-```nix
-# src/plugin.nix
-{ ... }:
-{
-  perSystem = { pkgs, ... }: {
-    testing.fixtures.app = inputs.tests.lib.mkFixture (_fixtures: {
-      name = "app";
-    });
-
-    testing.locators.app.getByStatus = status:
-      inputs.tests.lib.mkLocator {
-        type = "appStatus";
-        inherit status;
-      };
-
-    testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
-      accepts = [ "appStatus" ];
-      run = _fixtures: target:
-        inputs.tests.lib.mkAction "assertAppStatus" {
-          inherit (target) name;
-        };
-    };
-  };
-}
-```
-
-Import the plugin once beside the framework module:
-
-```nix
-imports = [
-  inputs.tests.flakeModules.default
-  ./src/plugin.nix
-];
-```
-
-Every test can then request `app` and use `expect.toBeReady` without importing
-the plugin itself. See [Fixtures](fixtures.md#plugins) for complete examples.
-
-## Running Tests
-
-Run every check for the current system:
+Run all checks for the current system with:
 
 ```sh
 nix flake check
 ```
 
-Run one named test:
-
-```sh
-nix build '.#checks.x86_64-linux."shows greeting"' --no-link -L
-```
-
-Replace the system segment with one enabled by the consumer flake. `-L` streams
-the test log.
+Next, read [Writing Tests](writing-tests.md) for steps, assertions, configuration,
+and separate test files. If you do not use flake-parts, see
+[Running Tests](running-tests.md#without-flake-parts).
