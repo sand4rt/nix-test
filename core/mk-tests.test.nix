@@ -1,7 +1,6 @@
 {
   pkgs,
   builders,
-  mkGithubMatrix,
   mkTests,
 }:
 let
@@ -156,27 +155,6 @@ assert
   }).sample.nixTest == {
     backend = "machine";
     graphical = true;
-  };
-assert
-  mkGithubMatrix {
-    terminal = (mkTests {
-      inherit pkgs;
-      test.terminal = { terminal, ... }: [ terminal.print ];
-    }).terminal;
-    other = pkgs.runCommand "other" { } "touch $out";
-  } == {
-    include = [
-      {
-        backend = "build";
-        check = "other";
-        timeout = 15;
-      }
-      {
-        backend = "terminal";
-        check = "terminal";
-        timeout = 15;
-      }
-    ];
   };
 pkgs.runCommand "nix-test-mk-tests-unit" { } ''
   touch "$out"

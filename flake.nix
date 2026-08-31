@@ -99,7 +99,6 @@
             inherit (pkgs) lib;
           };
         mkTests = import ./core/mk-tests.nix;
-        mkGithubMatrix = import ./core/github-matrix.nix;
         };
 
       packages = builtins.mapAttrs (
@@ -163,14 +162,27 @@
           mk-tests-unit = import ./core/mk-tests.test.nix {
             inherit pkgs;
             builders = import ./core/builders.nix;
-            mkGithubMatrix = self.lib.mkGithubMatrix;
             mkTests = self.lib.mkTests;
           };
         }
       ) nixpkgs.legacyPackages;
 
       ciMatrix = builtins.mapAttrs (
-        system: checks: self.lib.mkGithubMatrix checks
+        _system: checks: {
+          include = map (
+            name:
+            let
+              metadata = checks.${name}.nixTest or { };
+              backend = metadata.backend or "build";
+              graphical = metadata.graphical or false;
+            in
+            {
+              check = name;
+              inherit backend;
+              timeout = if graphical then 60 else if backend == "machine" then 45 else 15;
+            }
+          ) (builtins.attrNames checks);
+        }
       ) self.checks;
     };
 }
