@@ -1,6 +1,6 @@
 { mkLocator, ... }:
 {
-  testing.locators.terminal = {
+  terminal = {
     /**
       @doc terminal-machine.getByRegion
       ## `getByRegion`

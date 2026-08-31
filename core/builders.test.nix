@@ -4,7 +4,7 @@ let
   action = builders.mkAction "sampleAction" { value = 1; };
   fixture = builders.mkFixture (_: { value = 1; });
   locator = builders.mkLocator { type = "sampleLocator"; value = 1; };
-  target = builders.mkTarget "sampleTarget" { value = 1; };
+  otherLocator = builders.mkLocator { type = "otherLocator"; value = 1; };
   matcher = builders.mkMatcher {
     accepts = [ "sampleLocator" ];
     run = _: value: builders.mkAction "sampleAssertion" {
@@ -24,17 +24,11 @@ assert locator == {
   type = "sampleLocator";
   value = 1;
 };
-assert target == {
-  _kind = "target";
-  type = "sampleTarget";
-  value = 1;
-};
 assert (matcher { } locator).type == "sampleAssertion";
-assert fails (matcher { } target);
+assert fails (matcher { } otherLocator);
 assert (builders.mkAction "expected" { _kind = "wrong"; type = "wrong"; }).type == "expected";
 assert (builders.mkAction "expected" { _kind = "wrong"; })._kind == "action";
 assert (builders.mkLocator { _kind = "wrong"; type = "sample"; })._kind == "locator";
-assert (builders.mkTarget "expected" { _kind = "wrong"; type = "wrong"; }).type == "expected";
 pkgs.runCommand "nix-test-builders-unit" { } ''
   touch "$out"
 ''

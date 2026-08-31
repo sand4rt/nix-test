@@ -8,12 +8,11 @@
         inherit pkgs;
         inherit (pkgs) lib;
         fixtureFactories = config.testing.fixtures;
-        inherit (config.testing) locators;
         matcherFactories = config.testing.matchers;
       };
     in
     {
-      config._module.args = builders // {
+      config._module.args = {
         inherit (testFixtures) expect;
         test = import ./step/fixture.nix builders;
       };
@@ -82,26 +81,6 @@
       };
 
       /**
-        @doc testing.locators
-        ## `testing.locators`
-
-        ```nix
-        testing.locators.app.getByStatus = status: mkLocator {
-          type = "appStatus";
-          inherit status;
-        };
-        ```
-
-        Locators grouped by their owning fixture. Locator modules can be imported
-        directly and receive `mkLocator` as a per-system module argument.
-      */
-      options.testing.locators = lib.mkOption {
-        type = lib.types.lazyAttrsOf (lib.types.lazyAttrsOf lib.types.raw);
-        default = { };
-        description = "Custom locators grouped by fixture name.";
-      };
-
-      /**
         @doc testing.matchers
         ## `testing.matchers`
 
@@ -130,7 +109,7 @@
       config.checks = import ./core/mk-tests.nix {
         inherit pkgs;
         inherit (config) test;
-        inherit (config.testing) fixtures locators matchers;
+        inherit (config.testing) fixtures matchers;
       };
     };
 }

@@ -103,11 +103,6 @@ assert fails (mkTests {
 assert fails (mkTests {
   inherit pkgs;
   test.sample = actions;
-  locators.missing.getByName = _: builders.mkLocator { type = "missing"; };
-});
-assert fails (mkTests {
-  inherit pkgs;
-  test.sample = actions;
   matchers.toBeVisible = builders.mkMatcher {
     run = _: target: target;
   };

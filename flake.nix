@@ -64,41 +64,39 @@
       };
     in
     {
-      overlays.default = import ./overlay.nix;
       flakeModules.default = import ./module.nix;
       lib =
         let
           builders = import ./core/builders.nix;
         in
-        builders
-        // {
-        /**
-          @doc lib.test
-          ## `lib.test`
+        {
+          inherit (builders) mkFixture mkLocator mkMatcher;
+          /**
+            @doc lib.test.step
+            ## `lib.test.step`
 
-          Plain-flake callers use `lib.test.step name actions` to create named
-          steps. Flake-parts users receive the same object as the `test` module
-          argument and call `test.step name actions`.
-        */
-        test = import ./step/fixture.nix builders;
-        /**
-          @doc lib.fixtures
-          ## `lib.fixtures`
+            Plain-flake callers use `lib.test.step name actions` to create named
+            steps. Flake-parts users receive the same function as `test.step`.
+          */
+          test = import ./step/fixture.nix builders;
+          /**
+            @doc lib.fixtures
+            ## `lib.fixtures`
 
-          ```nix
-          inputs.tests.lib.fixtures { inherit pkgs; }
-          ```
+            ```nix
+            inputs.tests.lib.fixtures { inherit pkgs; }
+            ```
 
-          Resolves the complete built-in fixture set for advanced integrations.
-          Most projects should use `lib.mkTests` or the flake-parts module instead.
-        */
-        fixtures =
-          { pkgs }:
-          import ./core/fixtures.nix {
-            inherit pkgs;
-            inherit (pkgs) lib;
-          };
-        mkTests = import ./core/mk-tests.nix;
+            Resolves the complete built-in fixture set for advanced integrations.
+            Most projects should use `lib.mkTests` or the flake-parts module instead.
+          */
+          fixtures =
+            { pkgs }:
+            import ./core/fixtures.nix {
+              inherit pkgs;
+              inherit (pkgs) lib;
+            };
+          mkTests = import ./core/mk-tests.nix;
         };
 
       packages = builtins.mapAttrs (
@@ -159,6 +157,11 @@
             inherit pkgs;
             builders = import ./core/builders.nix;
           };
+          api-unit = import ./core/api.test.nix {
+            inherit pkgs;
+            publicLib = self.lib;
+            hasOverlay = self ? overlays;
+          };
           mk-tests-unit = import ./core/mk-tests.test.nix {
             inherit pkgs;
             builders = import ./core/builders.nix;
@@ -167,22 +170,5 @@
         }
       ) nixpkgs.legacyPackages;
 
-      ciMatrix = builtins.mapAttrs (
-        _system: checks: {
-          include = map (
-            name:
-            let
-              metadata = checks.${name}.nixTest or { };
-              backend = metadata.backend or "build";
-              graphical = metadata.graphical or false;
-            in
-            {
-              check = name;
-              inherit backend;
-              timeout = if graphical then 60 else if backend == "machine" then 45 else 15;
-            }
-          ) (builtins.attrNames checks);
-        }
-      ) self.checks;
     };
 }

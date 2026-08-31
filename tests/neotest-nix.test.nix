@@ -40,12 +40,18 @@
 
           outputs = { nixpkgs, ... }: {
             flakeModules.default = import ./module.nix;
-            lib = (import ./core/builders.nix) // {
-              fixtures = { pkgs }: import ./core/fixtures.nix {
-                inherit (pkgs) lib;
+            lib =
+              let
+                builders = import ./core/builders.nix;
+              in
+              {
+                inherit (builders) mkFixture mkLocator mkMatcher;
+                test = import ./step/fixture.nix builders;
+                fixtures = { pkgs }: import ./core/fixtures.nix {
+                  inherit (pkgs) lib;
+                };
+                mkTests = import ./core/mk-tests.nix;
               };
-              mkTests = import ./core/mk-tests.nix;
-            };
           };
         }
       '';

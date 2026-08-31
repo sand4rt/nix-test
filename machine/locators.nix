@@ -14,7 +14,7 @@ let
     };
 in
 {
-  testing.locators.machine = {
+  machine = {
     getByText =
       text:
       mkLocator {

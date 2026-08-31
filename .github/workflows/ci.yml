@@ -33,7 +33,24 @@ jobs:
         run: nix flake metadata --no-write-lock-file
       - name: Enumerate checks
         id: matrix
-        run: echo "value=$(nix eval --json .#ciMatrix.x86_64-linux)" >> "$GITHUB_OUTPUT"
+        run: |
+          matrix=$(nix eval --json .#checks.x86_64-linux --apply '
+            checks: {
+              include = map (
+                name:
+                let
+                  metadata = checks.${name}.nixTest or { };
+                  backend = metadata.backend or "build";
+                  graphical = metadata.graphical or false;
+                in {
+                  check = name;
+                  inherit backend;
+                  timeout = if graphical then 60 else if backend == "machine" then 45 else 15;
+                }
+              ) (builtins.attrNames checks);
+            }
+          ')
+          echo "value=$matrix" >> "$GITHUB_OUTPUT"
       - name: Check generated documentation
         run: |
           nix run .#generate-docs

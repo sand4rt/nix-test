@@ -2,7 +2,6 @@
   lib,
   pkgs,
   fixtureFactories ? { },
-  locators ? { },
   matcherFactories ? { },
 }:
 let
@@ -38,10 +37,9 @@ let
     inherit (builders) mkAction mkLocator;
   };
   builtInLocators = {
-    inherit (terminalLocators.testing.locators) terminal;
-    inherit (machineLocators.testing.locators) machine;
+    inherit (terminalLocators) terminal;
+    inherit (machineLocators) machine;
   };
-  allLocators = lib.recursiveUpdate builtInLocators locators;
   builtInFixtureFactories = {
     inherit (terminalModule.testing.fixtures) terminal;
     inherit (machineModule.testing.fixtures) machine machines;
@@ -77,7 +75,7 @@ let
     name: fixture:
     let
       value = fixture.factory fixtures;
-      fixtureLocators = allLocators.${name} or { };
+      fixtureLocators = builtInLocators.${name} or { };
     in
     if builtins.isAttrs value then
       value // fixtureLocators

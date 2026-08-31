@@ -34,8 +34,8 @@ in {
 }
 ```
 
-`fixtures`, `locators`, and `matchers` accept the same plugin values as their
-flake-parts options.
+`fixtures` and `matchers` accept the same plugin values as their flake-parts
+options.
 
 ## Without Flakes
 
