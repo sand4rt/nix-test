@@ -1,28 +1,41 @@
 { inputs, ... }:
 {
-  perSystem = { pkgs, expect, ... }: {
-    testing = {
-      fixtures.greeting = inputs.self.lib.mkFixture ({ terminal, ... }: {
-        setup = [ (terminal.open pkgs.hello) ];
-        locator = terminal.getByText "Hello";
-      });
+  perSystem = { expect, ... }: {
+    testing.fixtures.app = inputs.self.lib.mkFixture (
+      { machine, ... }:
+      {
+        status = name:
+          inputs.self.lib.mkLocator {
+            type = "appStatus";
+            node = machine.name;
+            service = "${name}.service";
+            description = "application ${name}";
+          };
+      }
+    );
 
-      locators.greeting.custom = inputs.self.lib.mkLocator {
-        type = "greetingText";
-        text = "Hello";
-      };
-
-      matchers.toBePresent = inputs.self.lib.mkMatcher {
-        accepts = [ "greetingText" ];
-        run = { expect, ... }: target:
-          (expect (inputs.self.lib.mkLocator {
-            type = "terminalText";
-            inherit (target) text;
-          })).toBeVisible;
-      };
+    testing.matchers.toBeOperational = inputs.self.lib.mkMatcher {
+      accepts = [ "appStatus" ];
+      run = { machine, expect, ... }: target:
+        (expect (machine.service target.service)).toBeActive;
     };
 
-    test."custom fixtures and matchers" = { greeting }:
-      greeting.setup ++ [ (expect greeting.custom).toBePresent ];
+    test."custom fixtures and matchers" = { app, machine }: [
+      (machine.configure {
+        modules = [
+          {
+            systemd.services.api = {
+              wantedBy = [ "multi-user.target" ];
+              serviceConfig = {
+                Type = "oneshot";
+                RemainAfterExit = true;
+              };
+              script = "touch /run/api-ready";
+            };
+          }
+        ];
+      })
+      (expect (app.status "api")).toBeOperational
+    ];
   };
 }

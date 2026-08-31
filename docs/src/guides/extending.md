@@ -1,52 +1,95 @@
 # Extending Nix Test
 
-Plugins add project-specific fixtures, locators, and matchers through mergeable
-flake-parts options.
+Projects can add domain-specific fixtures and matchers through the mergeable
+`testing.fixtures` and `testing.matchers` options.
 
-## Custom Fixture
+This example adds:
+
+- `app.status name`, a locator for an application's systemd service
+- `toBeOperational`, a matcher that checks that service
+
+## Define The Extension
+
+Create `testing/app.nix`:
 
 ```nix
-testing.fixtures.app = inputs.tests.lib.mkFixture (_fixtures: {
-  status = name:
-    inputs.tests.lib.mkLocator {
-      type = "appStatus";
-      status = name;
+{ inputs, ... }:
+{
+  perSystem = { ... }: {
+    testing.fixtures.app = inputs.nix-test.lib.mkFixture (
+      { machine, ... }:
+      {
+        status = name:
+          inputs.nix-test.lib.mkLocator {
+            type = "appStatus";
+            node = machine.name;
+            service = "${name}.service";
+            description = "application ${name}";
+          };
+      }
+    );
+
+    testing.matchers.toBeOperational = inputs.nix-test.lib.mkMatcher {
+      accepts = [ "appStatus" ];
+      run = { machine, expect, ... }: target:
+        (expect (machine.service target.service)).toBeActive;
     };
-});
+  };
+}
 ```
 
-The factory receives the complete fixture set. Its return value is injected as
-`app` into test callbacks.
+`mkFixture` receives the complete runtime fixture set. Its returned value is
+available under the configured name, so this factory creates the `app` fixture.
 
-## Custom Matcher
+`mkLocator` gives the target a distinct `type`. The matcher's `accepts` list
+limits `toBeOperational` to that type, and its `run` function composes the built-in
+service locator and matcher.
 
-```nix
-testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
-  accepts = [ "appStatus" ];
-  run = { expect, ... }: target:
-    (expect (inputs.tests.lib.mkLocator {
-      type = "terminalText";
-      text = target.status;
-    })).toBeVisible;
-};
-```
+## Import The Extension
 
-Constructors validate value shape and matcher compatibility during Nix
-evaluation. Prefer composing custom matchers from existing runtime-backed
-locators and matchers.
-
-## Reusable Plugin
-
-Put fixture, locator, and matcher declarations in a flake-parts module and
-import it beside Nix Test:
+Import the extension beside Nix Test in `flake.nix`:
 
 ```nix
 imports = [
-  inputs.tests.flakeModules.default
-  ./testing/plugin.nix
+  inputs.nix-test.flakeModules.default
+  ./testing/app.nix
 ];
 ```
 
-Tests can then request the custom fixture and matcher without importing the
-plugin themselves. See the [Core API](../reference/core.md) for constructor
-signatures.
+## Use It In A Test
+
+Create `tests/app.test.nix`:
+
+```nix
+{ expect, ... }:
+{
+  test."starts the API" = { app, machine }: [
+    (machine.configure {
+      modules = [
+        {
+          systemd.services.api = {
+            wantedBy = [ "multi-user.target" ];
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+            };
+            script = "touch /run/api-ready";
+          };
+        }
+      ];
+    })
+
+    (expect (app.status "api")).toBeOperational
+  ];
+}
+```
+
+`expect` is imported at module scope. `app` and `machine` are runtime fixtures,
+so the test requests them in its callback.
+
+Invalid combinations fail during Nix evaluation. For example,
+`(expect (machine.file "/run/api-ready")).toBeOperational` is rejected because a
+file locator is not an `appStatus` target.
+
+See the [Core API](../reference/core.md) for the exact `mkFixture`, `mkLocator`,
+and `mkMatcher` signatures.
