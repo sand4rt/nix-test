@@ -4,6 +4,7 @@
     {
       pkgs,
       system,
+      expect,
       ...
     }:
     let
@@ -15,11 +16,14 @@
         ;
 
       targetCheck =
+        let
+          inherit (self.lib.fixtures { inherit pkgs; }) terminal expect;
+        in
         (self.lib.mkTests {
           inherit pkgs;
-          test."interop passes" = { terminal, expect }: [
+          test."interop passes" = { terminal }: [
             (terminal.open pkgs.hello)
-            (expect.toBeVisible (terminal.getByText "Hello"))
+            (expect (terminal.getByText "Hello")).toBeVisible
           ];
         })."interop passes";
 
@@ -53,11 +57,11 @@
       '';
 
       fixtureTest = pkgs.writeText "fixture.test.nix" ''
-        { pkgs, ... }:
+        { pkgs, expect, ... }:
         {
-          test."interop passes" = { terminal, expect }: [
+          test."interop passes" = { terminal }: [
             (terminal.open pkgs.hello)
-            (expect.toBeVisible (terminal.getByText "Hello"))
+            (expect (terminal.getByText "Hello")).toBeVisible
           ];
         }
       '';
@@ -136,13 +140,7 @@
         }).neovim;
     in
     {
-      test."neotest-nix interoperability" =
-        {
-          machine,
-          workspace,
-          expect,
-        }:
-        [
+      test."neotest-nix interoperability" = { machine, workspace }: [
           (machine.configure {
             modules = [
               {
@@ -176,39 +174,36 @@
           (machine.open "cd ${workspace.path} && nvim flake.nix")
           (machine.press ":lua require('neotest').summary.open()")
           (machine.press "<enter>")
-          (expect.toBeVisible (machine.getByText "flake.nix"))
+          (expect (machine.getByText "flake.nix")).toBeVisible
           (machine.press "<c-w>")
           (machine.press "o")
           (machine.press "/flake.nix")
           (machine.press "<enter>")
           (machine.press "e")
-          (expect.toBeVisible (machine.getByText "checks"))
+          (expect (machine.getByText "checks")).toBeVisible
           (machine.press "/checks")
           (machine.press "<enter>")
           (machine.press "e")
-          (expect.toBeVisible (machine.getByText "${system}"))
+          (expect (machine.getByText "${system}")).toBeVisible
           (machine.press "/${system}")
           (machine.press "<enter>")
           (machine.press "e")
-          (expect.toBeVisible (machine.getByText "interop passes"))
-          (expect.toEqual {
-            actual = machine.getByRegion {
+          (expect (machine.getByText "interop passes")).toBeVisible
+          ((expect (machine.getByRegion {
               width = 40;
               height = 5;
-            };
-            expected = ''
+            })).toEqual ''
               neotest-nix
               - flake.nix (tmp/nix-test)
                 - checks
                   - ${system}
                       interop passes
-            '';
-          })
+            '')
           machine.print
           (machine.press "/interop passes")
           (machine.press "<enter>")
           (machine.press "r")
-          (expect.toBeVisible (machine.getByPattern "P.*interop passes"))
-        ];
+          (expect (machine.getByPattern "P.*interop passes")).toBeVisible
+      ];
     };
 }

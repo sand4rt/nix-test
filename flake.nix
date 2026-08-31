@@ -1,7 +1,7 @@
 {
   description = "A declarative testing framework for testing user-facing behavior in Nix";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.nvf = {
     url = "github:NotAShelf/nvf";
@@ -25,7 +25,7 @@
         ];
         systems = builtins.attrNames nixpkgs.legacyPackages;
         perSystem =
-          { pkgs, ... }:
+          { pkgs, expect, ... }:
           {
             imports = [
               ./browser/fixture.test.nix
@@ -52,9 +52,9 @@
                   rows = 30;
                 };
               };
-              "interop passes" = { terminal, expect }: [
+              "interop passes" = { terminal }: [
                 (terminal.open pkgs.hello)
-                (expect.toBeVisible (terminal.getByText "Hello"))
+                (expect (terminal.getByText "Hello")).toBeVisible
               ];
             };
           };

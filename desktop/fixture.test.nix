@@ -1,6 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, expect, ... }:
 {
-  test."observes a desktop window by its title" = { machine, desktop, expect }: [
+  test."observes a desktop window by its title" = { machine, desktop }: [
     (machine.configure {
       modules = [
         {
@@ -11,7 +11,7 @@
       ];
     })
     (machine.command "startx ${pkgs.xterm}/bin/xterm -T 'Welcome' -- :0 >/tmp/x.log 2>&1 &")
-    (expect.toBeVisible (desktop.getByWindow machine "Welcome"))
+    (expect (desktop.getByWindow machine "Welcome")).toBeVisible
     (desktop.type machine "hello")
     (desktop.screenshot machine "welcome-window")
   ];

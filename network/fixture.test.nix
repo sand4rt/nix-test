@@ -1,6 +1,7 @@
-{ pkgs, ... }:
+{ pkgs, expect, ... }:
 {
-  test."observes connectivity between machines" = { machines, network, expect }: let
+  test."observes connectivity between machines" = { machines, network }:
+  let
     server = machines.node "server";
     client = machines.node "client";
   in [
@@ -16,22 +17,22 @@
       ];
       client.modules = [ ];
     })
-    (expect.toBeReachable (network.endpoint {
+    (expect (network.endpoint {
       from = client;
       host = "server";
       port = 8080;
-    }))
+    })).toBeReachable
     (network.partition { left = [ client ]; right = [ server ]; })
-    (expect.toBeUnreachable (network.endpoint {
+    (expect (network.endpoint {
       from = client;
       host = "server";
       port = 8080;
-    }))
+    })).toBeUnreachable
     (network.heal { left = [ client ]; right = [ server ]; })
-    (expect.toBeReachable (network.endpoint {
+    (expect (network.endpoint {
       from = client;
       host = "server";
       port = 8080;
-    }))
+    })).toBeReachable
   ];
 }

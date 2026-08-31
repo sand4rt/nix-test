@@ -1,5 +1,7 @@
+{ expect, ... }:
 {
-  test."runs behavior as a configured user" = { machine, user, expect }: let
+  test."runs behavior as a configured user" = { machine, user }:
+  let
     operator = user.locate machine "operator";
   in [
     (machine.configure {
@@ -13,10 +15,10 @@
         }
       ];
     })
-    (expect.toExist operator)
-    (expect.toBeMemberOf operator "operators")
+    (expect operator).toExist
+    ((expect operator).toBeMemberOf "operators")
     (user.run operator "echo ready > /tmp/operator-ready")
-    (expect.toExist (machine.file "/tmp/operator-ready"))
-    (expect.toBeOwnedBy (machine.file "/tmp/operator-ready") "operator")
+    (expect (machine.file "/tmp/operator-ready")).toExist
+    ((expect (machine.file "/tmp/operator-ready")).toBeOwnedBy "operator")
   ];
 }

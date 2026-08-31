@@ -1,6 +1,7 @@
-{ pkgs, ... }:
+{ pkgs, expect, ... }:
 {
-  test."signs in through accessible controls" = { machine, browser, expect }: let
+  test."signs in through accessible controls" = { machine }:
+  let
     page = pkgs.writeTextDir "index.html" ''
       <!doctype html>
       <html>
@@ -24,12 +25,13 @@
         }
       ];
     })
-    (browser.configure machine)
-    (browser.open machine "http://machine:8080/")
-    (browser.fill (browser.getByLabel machine "Username") "Ada")
-    (expect.toHaveValue (browser.getByLabel machine "Username") "Ada")
-    (browser.click (browser.getByRole machine "button" { name = "Sign in"; }))
-    (expect.toBeVisible (browser.getByText machine "Welcome, Ada"))
-    (expect.toHaveTitle machine "Account")
+    (expect (machine.service "web.service")).toBeActive
+    machine.browser.start
+    (machine.browser.open "http://machine:8080/")
+    ((machine.browser.getByLabel "Username").fill "Ada")
+    ((expect (machine.browser.getByLabel "Username")).toHaveValue "Ada")
+    (machine.browser.getByRole "button" { name = "Sign in"; }).click
+    (expect (machine.browser.getByText "Welcome, Ada")).toBeVisible
+    ((expect machine.browser).toHaveTitle "Account")
   ];
 }

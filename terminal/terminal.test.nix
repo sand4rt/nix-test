@@ -1,46 +1,28 @@
-{ pkgs, ... }:
+{ pkgs, expect, ... }:
 {
-  test."writes files at workspace root" =
-    {
-      terminal,
-      workspace,
-      expect,
-    }:
-    [
+  test."writes files at workspace root" = { terminal, workspace }: [
       (workspace.writeFile "message.txt" "root file ready\n")
       (terminal.open "${pkgs.coreutils}/bin/cat message.txt")
-      (expect.toBeVisible (terminal.getByText "root file ready"))
+      (expect (terminal.getByText "root file ready")).toBeVisible
     ];
 
-  test."writes workspace files" =
-    {
-      terminal,
-      workspace,
-      expect,
-    }:
-    [
+  test."writes workspace files" = { terminal, workspace }: [
       (workspace.writeFile "nested/message.txt" "workspace ready\n")
       (terminal.open "${pkgs.coreutils}/bin/cat nested/message.txt")
-      (expect.toBeVisible (terminal.getByText "workspace ready"))
+      (expect (terminal.getByText "workspace ready")).toBeVisible
     ];
 
-  test."stages workspace trees" =
-    {
-      terminal,
-      workspace,
-      expect,
-    }:
-    [
+  test."stages workspace trees" = { terminal, workspace }: [
       (workspace.makeDirectory "nested")
       (workspace.copyFile ./terminal.test.nix "nested/source.nix")
       (workspace.symlink "nested/source.nix" "source-link.nix")
       (workspace.setMode "nested/source.nix" "0600")
       (workspace.remove "source-link.nix")
       (terminal.open "${pkgs.coreutils}/bin/stat -c '%a %n' nested/source.nix")
-      (expect.toBeVisible (terminal.getByText "600 nested/source.nix"))
+      (expect (terminal.getByText "600 nested/source.nix")).toBeVisible
     ];
 
-  test."sends terminal input" = { terminal, expect }: [
+  test."sends terminal input" = { terminal }: [
     (terminal.open (
       pkgs.writeShellApplication {
         name = "echo-input";
@@ -51,29 +33,26 @@
       }
     ))
     (terminal.press "hello<enter>")
-    (expect.toBeVisible (terminal.getByText "received: hello"))
+    (expect (terminal.getByText "received: hello")).toBeVisible
   ];
 
-  test."matches terminal regions" = { terminal, expect }: [
+  test."matches terminal regions" = { terminal }: [
     (terminal.open (
       pkgs.writeShellApplication {
         name = "print-region";
         text = "printf 'alpha\\nbeta\\n'";
       }
     ))
-    (expect.toEqual {
-      actual = terminal.getByRegion {
+    ((expect (terminal.getByRegion {
         width = 5;
         height = 2;
-      };
-      expected = ''
+      })).toEqual ''
         alpha
         beta
-      '';
-    })
+      '')
   ];
 
-  test."applies terminal configuration" = { terminal, expect }: [
+  test."applies terminal configuration" = { terminal }: [
     (terminal.open (
       pkgs.writeShellApplication {
         name = "show-size";
@@ -81,7 +60,7 @@
         text = "stty size";
       }
     ))
-    (expect.toBeVisible (terminal.getByText "30 100"))
+    (expect (terminal.getByText "30 100")).toBeVisible
     terminal.print
   ];
 }

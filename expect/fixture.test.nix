@@ -1,6 +1,7 @@
+{ expect, ... }:
 {
-  test."matches visible terminal behavior" = { terminal, expect }: [
+  test."matches visible terminal behavior" = { terminal }: [
     (terminal.open "printf 'signed in'")
-    (expect.toBeVisible (terminal.getByText "signed in"))
+    (expect (terminal.getByText "signed in")).toBeVisible
   ];
 }

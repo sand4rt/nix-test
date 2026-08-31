@@ -5,7 +5,7 @@
 }:
 let
   fails = value: !(builtins.tryEval (builtins.deepSeq value true)).success;
-  callback = _: [ ];
+  actions = _: [ ];
   terminalInterface = import ../terminal/interface.nix { inherit (pkgs) lib; };
   terminalImplementation = {
     getByRegion = _: { };
@@ -20,6 +20,7 @@ let
     inherit (pkgs) lib;
   };
   expectedMachineMethods = [
+    "browser"
     "command"
     "configure"
     "container"
@@ -57,15 +58,15 @@ assert
   (builtInFixtures.machine.command "test -e ${builtInFixtures.workspace.path}/file").command
   == "test -e /tmp/nix-test/file";
 assert
-  (builtInFixtures.expect.toFail (builtInFixtures.machine.command "true")).code
+  ((builtInFixtures.expect (builtInFixtures.machine.command "true")).toFail).code
   == ''machines["machine"].wait_until_fails("true")'';
 assert builtins.attrNames builtInFixtures.machine == expectedMachineMethods;
 assert (builtInFixtures.machines.node "server").name == "server";
 assert
-  (builtInFixtures.expect.toBeActive ((builtInFixtures.machines.node "server").service "example"))
+  ((builtInFixtures.expect ((builtInFixtures.machines.node "server").service "example")).toBeActive)
   .node == "server";
 assert
-  (builtInFixtures.expect.toExist ((builtInFixtures.machines.node "server").file "/run/ready"))
+  ((builtInFixtures.expect ((builtInFixtures.machines.node "server").file "/run/ready")).toExist)
   .command == "test -e /run/ready";
 assert fails (builtInFixtures.workspace.writeFile "../escape" "no");
 assert fails (builtInFixtures.workspace.remove "");
@@ -79,34 +80,34 @@ assert fails (mkTests {
   inherit pkgs;
   test = {
     configure.unknown = true;
-    sample = callback;
+    sample = actions;
   };
 });
 assert fails (mkTests {
   inherit pkgs;
   test = {
     configure.timeout = 0;
-    sample = callback;
+    sample = actions;
   };
 });
 assert fails (mkTests {
   inherit pkgs;
-  test.sample = callback;
+  test.sample = actions;
   fixtures.terminal = builders.mkFixture (_: { });
 });
 assert fails (mkTests {
   inherit pkgs;
-  test.sample = callback;
+  test.sample = actions;
   fixtures.custom = _: { };
 });
 assert fails (mkTests {
   inherit pkgs;
-  test.sample = callback;
+  test.sample = actions;
   locators.missing.getByName = _: builders.mkLocator { type = "missing"; };
 });
 assert fails (mkTests {
   inherit pkgs;
-  test.sample = callback;
+  test.sample = actions;
   matchers.toBeVisible = builders.mkMatcher {
     run = _: target: target;
   };
@@ -123,22 +124,22 @@ assert fails (mkTests {
 });
 assert fails (mkTests {
   inherit pkgs;
-  test.sample = { terminal, expect, ... }: [
-    (expect.toFail (terminal.getByText "wrong target"))
+  test.sample = _: [
+    (builtInFixtures.expect (builtInFixtures.terminal.getByText "wrong target")).toFail
   ];
 });
 assert fails (mkTests {
   inherit pkgs;
-  test.sample = { missingFixture }: [ missingFixture ];
+  test.sample = { machine, ... }: [ (machine.command "true") ];
 });
 assert fails (mkTests {
   inherit pkgs;
-  test.sample = { machine }: [ (machine.command "true") ];
+  test.sample = { expect }: [ expect ];
 });
 assert
   (mkTests {
     inherit pkgs;
-    test.sample = { terminal }: [ terminal.print ];
+    test.sample = { terminal, ... }: [ terminal.print ];
   }).sample.type == "derivation";
 pkgs.runCommand "nix-test-mk-tests-unit" { } ''
   touch "$out"

@@ -1,5 +1,6 @@
+{ expect, ... }:
 {
-  test."observes files exposed by the system" = { machine, filesystem, expect }: [
+  test."observes files exposed by the system" = { machine, filesystem }: [
     (machine.configure {
       modules = [
         {
@@ -11,11 +12,11 @@
         }
       ];
     })
-    (expect.toBeFile (filesystem.file machine "/etc/nix-test/message"))
-    (expect.toHaveContent (filesystem.file machine "/etc/nix-test/message") "hello from NixOS")
-    (expect.toBeDirectory (filesystem.directory machine "/var/lib/nix-test"))
-    (expect.toBeSymlink (filesystem.symlink machine "/var/lib/nix-test/message"))
-    (expect.toPointTo (filesystem.symlink machine "/var/lib/nix-test/message") "/etc/nix-test/message")
-    (expect.toHaveMode (filesystem.directory machine "/var/lib/nix-test") "0750")
+    (expect (filesystem.file machine "/etc/nix-test/message")).toBeFile
+    ((expect (filesystem.file machine "/etc/nix-test/message")).toHaveContent "hello from NixOS")
+    (expect (filesystem.directory machine "/var/lib/nix-test")).toBeDirectory
+    (expect (filesystem.symlink machine "/var/lib/nix-test/message")).toBeSymlink
+    ((expect (filesystem.symlink machine "/var/lib/nix-test/message")).toPointTo "/etc/nix-test/message")
+    ((expect (filesystem.directory machine "/var/lib/nix-test")).toHaveMode "0750")
   ];
 }

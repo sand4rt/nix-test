@@ -1,5 +1,6 @@
+{ expect, ... }:
 {
-  test."controls a service by name" = { machine, service, expect }: [
+  test."controls a service by name" = { machine }: [
     (machine.configure {
       modules = [
         {
@@ -13,10 +14,10 @@
         }
       ];
     })
-    (service.start (machine.service "greeter.service"))
-    (expect.toBeActive (machine.service "greeter.service"))
-    (expect.toHaveLog (machine.service "greeter.service") "greeting ready")
-    (service.stop (machine.service "greeter.service"))
-    (expect.toBeInactive (machine.service "greeter.service"))
+    (machine.service "greeter.service").start
+    (expect (machine.service "greeter.service")).toBeActive
+    ((expect (machine.service "greeter.service").logs).toContain "greeting ready")
+    (machine.service "greeter.service").stop
+    (expect (machine.service "greeter.service")).toBeInactive
   ];
 }
