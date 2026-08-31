@@ -96,12 +96,19 @@ test."shows greeting" = { terminal }: [
   (terminal.open pkgs.hello)
   (expect (terminal.getByText "Hello")).toBeVisible
 ];
+
+test."shared machine" = { machine }: {
+  test.step."service starts" = [
+    (expect (machine.service "example.service")).toBeActive
+  ];
+};
 ```
 
 A mergeable attribute set of integration-test fixture callbacks. Attribute
-names become check names. `test` and `expect` are module arguments; runtime
-fixtures are callback arguments. `test.configure` is reserved for
-suite-wide configuration.
+names become check names. A test callback may return an action list or a
+`test.step.<name>` attribute set of named subtests. `test` and `expect` are
+module arguments; runtime fixtures are callback arguments. `test.configure`
+is reserved for suite-wide configuration.
 
 ---
 
@@ -125,8 +132,12 @@ Standalone terminal dimensions default to 140 columns by 42 rows.
 
 ### `test.step`
 
-Groups actions into a named step. The step appears as a nested subtest in
-the test log, making longer scenarios easier to read and debug.
+Groups actions into a named step inside a test. The step appears as a nested
+subtest in the test log, making longer scenarios easier to read and debug.
+
+A test callback can alternatively return a `test.step.<name> = actions`
+attribute set for declarative top-level steps. This function remains available
+inside action lists for nested steps.
 
 **Usage**
 

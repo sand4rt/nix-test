@@ -17,6 +17,7 @@
       ];
       client.modules = [ ];
     })
+    (expect (server.service "example-server.service")).toBeActive
     (expect (network.endpoint {
       from = client;
       host = "server";

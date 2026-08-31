@@ -12,7 +12,7 @@
 (expect machine.browser).toHaveTitle expectedTitle
 ```
 
-Browser assertions retry through Selenium until timeout.
+Browser assertions use Playwright's auto-waiting until timeout.
 
 ---
 

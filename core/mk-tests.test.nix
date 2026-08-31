@@ -125,12 +125,29 @@ assert fails (mkTests {
 });
 assert
   (mkTests {
-  inherit pkgs;
-  test.sample = { machine, ... }: [ (machine.command "true") ];
+    inherit pkgs;
+    test.sample = { machine, ... }: [ (machine.command "true") ];
   }).sample.nixTest == {
     backend = "machine";
     graphical = false;
   };
+assert
+  (mkTests {
+    inherit pkgs;
+    test.sample = { machine, ... }: {
+      test.step.first = [ (machine.command "true") ];
+      test.step.second = [ (machine.command "true") ];
+    };
+  }).sample.nixTest == {
+    backend = "machine";
+    graphical = false;
+  };
+assert fails (mkTests {
+  inherit pkgs;
+  test.sample = _: {
+    test.step.invalid = [ { type = "notAnAction"; } ];
+  };
+});
 assert fails (mkTests {
   inherit pkgs;
   test.sample = { expect }: [ expect ];

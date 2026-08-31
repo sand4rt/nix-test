@@ -119,13 +119,32 @@ let
   ) (builtins.attrNames fixtures);
   cases = builtins.mapAttrs (
     name: callback:
-    {
-      inherit name;
-      actions =
+    let
+      result =
         if builtins.isFunction callback then
           callback (builtins.intersectAttrs (builtins.functionArgs callback) testFixtures)
         else
           callback;
+    in
+    {
+      inherit name;
+      actions =
+        if
+          builtins.isAttrs result
+          && builtins.attrNames result == [ "test" ]
+          && builtins.isAttrs result.test
+          && builtins.attrNames result.test == [ "step" ]
+          && builtins.isAttrs result.test.step
+        then
+          pkgs.lib.mapAttrsToList (
+            stepName: actions:
+            builders.mkAction "step" {
+              name = stepName;
+              inherit actions;
+            }
+          ) result.test.step
+        else
+          result;
     }
   ) testCases;
   invalidCases = builtins.filter (
@@ -313,15 +332,13 @@ builtins.mapAttrs (
              pkgs.jq
              pkgs.netcat
              pkgs.tmux
-           ];
+            ];
          }
        ]
         ++ options.modules;
       }) nodes;
-      extraPythonPackages = pythonPackages: pkgs.lib.optional (browsers != [ ]) pythonPackages.selenium;
       testScript = ''
         timeout = ${toString configuration.timeout}
-        browsers = {}
         results = {}
         try:
           start_all()
@@ -329,8 +346,7 @@ builtins.mapAttrs (
           with subtest(${builtins.toJSON name}):
         ${renderActions "    " actions}
         finally:
-          for browser in browsers.values():
-            browser.quit()
+          pass
       '';
     })
   else

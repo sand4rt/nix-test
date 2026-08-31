@@ -25,12 +25,19 @@
           (terminal.open pkgs.hello)
           (expect (terminal.getByText "Hello")).toBeVisible
         ];
+
+        test."shared machine" = { machine }: {
+          test.step."service starts" = [
+            (expect (machine.service "example.service")).toBeActive
+          ];
+        };
         ```
 
         A mergeable attribute set of integration-test fixture callbacks. Attribute
-        names become check names. `test` and `expect` are module arguments; runtime
-        fixtures are callback arguments. `test.configure` is reserved for
-        suite-wide configuration.
+        names become check names. A test callback may return an action list or a
+        `test.step.<name>` attribute set of named subtests. `test` and `expect` are
+        module arguments; runtime fixtures are callback arguments. `test.configure`
+        is reserved for suite-wide configuration.
       */
       options.test = lib.mkOption {
         type = lib.types.lazyAttrsOf lib.types.raw;

@@ -16,10 +16,15 @@ in
     accepts = [ "desktopWindow" "desktopText" ];
     run = _fixtures: target: mkAction "desktopAssertion" {
       inherit (target) node description;
-      code = if target.type == "desktopWindow" then
-        ''${nodeExpression target.node}.wait_for_window(${builtins.toJSON target.title}, timeout=timeout)''
-      else
-        ''${nodeExpression target.node}.wait_for_text(${builtins.toJSON target.text}, timeout=timeout)'';
+      code = ''
+        ${nodeExpression target.node}.wait_for_x(timeout=timeout)
+        ${
+          if target.type == "desktopWindow" then
+            ''${nodeExpression target.node}.wait_for_window(${builtins.toJSON target.title}, timeout=timeout)''
+          else
+            ''${nodeExpression target.node}.wait_for_text(${builtins.toJSON target.text}, timeout=timeout)''
+        }
+      '';
     };
   };
 }
