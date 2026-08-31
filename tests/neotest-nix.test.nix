@@ -57,7 +57,7 @@
         rm -f "$out/flake.lock"
       '';
 
-      fixtureTest = pkgs.writeText "fixture.test.nix" ''
+      fixtureTestContent = ''
         { pkgs, expect, ... }:
         {
           test."interop passes" = { terminal }: [
@@ -66,8 +66,9 @@
           ];
         }
       '';
+      fixtureTest = pkgs.writeText "fixture.test.nix" fixtureTestContent;
 
-      fixtureFlake = pkgs.writeText "flake.nix" ''
+      fixtureFlakeContent = ''
         {
           inputs = {
             nixpkgs.url = "path:${nixpkgs}";
@@ -92,6 +93,7 @@
             };
         }
       '';
+      fixtureFlake = pkgs.writeText "flake.nix" fixtureFlakeContent;
 
       neovim =
         let
@@ -173,8 +175,8 @@
               }
             ];
           })
-          (filesystem.writeFile "flake.nix" (builtins.readFile fixtureFlake))
-          (filesystem.writeFile "fixture.test.nix" (builtins.readFile fixtureTest))
+          (filesystem.writeFile "flake.nix" fixtureFlakeContent)
+          (filesystem.writeFile "fixture.test.nix" fixtureTestContent)
           (machine.command ''
             cd ${filesystem.root}
             nix flake lock --offline
