@@ -4,7 +4,7 @@ Use `machine` when behavior depends on a NixOS configuration. Every machine test
 starts with `machine.configure`, which selects the NixOS VM backend.
 
 ```nix
-test."service becomes healthy" = { machine, expect }: [
+test."service becomes healthy" = { machine }: [
   (machine.configure {
     modules = [
       self.nixosModules.default
@@ -12,9 +12,9 @@ test."service becomes healthy" = { machine, expect }: [
     ];
   })
 
-  (expect.toBeActive (machine.service "example.service"))
-  (expect.toExist (machine.file "/run/example/ready"))
-  (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
+  (expect (machine.service "example.service")).toBeActive
+  (expect (machine.file "/run/example/ready")).toExist
+  ((expect (machine.http.get "http://localhost/health")).toHaveStatus 200)
 ];
 ```
 
@@ -24,11 +24,11 @@ Use semantic fixtures for services, filesystems, endpoints, HTTP, users, and
 containers. Their matchers retry until the expected state appears.
 
 ```nix
-let app = machine.service "example.service"; in [
-  (expect.toBeActive app)
-  (expect.toHaveLog app "configuration loaded")
-  (expect.toBeOwnedBy (machine.file "/var/lib/example") "example")
-  (expect.toBeReachable (machine.endpoint.tcp 8080))
+[
+  (expect (machine.service "example.service")).toBeActive
+  ((expect (machine.service "example.service").logs).toContain "configuration loaded")
+  ((expect (machine.file "/var/lib/example")).toBeOwnedBy "example")
+  (expect (machine.endpoint.tcp 8080)).toBeReachable
 ]
 ```
 
@@ -40,7 +40,7 @@ let app = machine.service "example.service"; in [
 [
   (machine.open "example-tui")
   (machine.press "start<enter>")
-  (expect.toBeVisible (machine.getByText "running"))
+  (expect (machine.getByText "running")).toBeVisible
 ]
 ```
 

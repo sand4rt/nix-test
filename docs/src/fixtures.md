@@ -6,11 +6,11 @@ focused on observable behavior instead of backend implementation details.
 Request only the fixtures a test uses:
 
 ```nix
-test."service is healthy" = { machine, service, expect }: [
+test."service is healthy" = { machine }: [
   (machine.configure { modules = [ serviceModule ]; })
-  (service.start (machine.service "example.service"))
-  (expect.toBeActive (machine.service "example.service"))
-  (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
+  (machine.service "example.service").start
+  (expect (machine.service "example.service")).toBeActive
+  ((expect (machine.http.get "http://localhost/health")).toHaveStatus 200)
 ];
 ```
 
@@ -52,10 +52,10 @@ behavior. They produce clearer tests and diagnostics.
 Matchers live under `expect` and accept compatible locators or targets:
 
 ```nix
-expect.toBeVisible (terminal.getByText "ready")
-expect.toBeActive (machine.service "example.service")
-expect.toHaveContent (machine.file "/run/example/state") "ready"
-expect.toHaveStatus 200 (machine.http.get "http://localhost/health")
+(expect (terminal.getByText "ready")).toBeVisible
+(expect (machine.service "example.service")).toBeActive
+(expect (machine.file "/run/example/state")).toHaveContent "ready"
+(expect (machine.http.get "http://localhost/health")).toHaveStatus 200
 ```
 
 Observable-state matchers retry until they pass or the timeout expires. They do
@@ -67,8 +67,8 @@ Use commands when no semantic locator describes the behavior:
 
 ```nix
 (machine.command "example status")
-(expect.toEventuallySucceed (machine.command "example is-ready"))
-(expect.toFail (machine.command "example forbidden-operation"))
+(expect (machine.command "example is-ready")).toEventuallySucceed
+(expect (machine.command "example forbidden-operation")).toFail
 ```
 
 `machine.command` as a standalone action runs once. Command matchers retry, so
@@ -80,14 +80,14 @@ Use `machine.run` or `http.send` when an operation has side effects. Save its
 result once, then make assertions without repeating the operation:
 
 ```nix
-test."creates an item once" = { machine, result, expect }: [
+test."creates an item once" = { machine, result }: [
   (machine.configure { })
   (machine.run {
     command = "example create";
     saveAs = "create";
   })
-  (expect.toHaveExitCode 0 (result.command "create"))
-  (expect.toContainStdout (result.stdout "create") "created")
+  ((expect (result.command "create")).toHaveExitCode 0)
+  ((expect (result.stdout "create")).toContainStdout "created")
 ];
 ```
 

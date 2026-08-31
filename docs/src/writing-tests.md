@@ -4,10 +4,10 @@ Tests are named attributes whose values are callbacks. A callback receives the
 fixtures it requests and returns an ordered list of actions.
 
 ```nix
-test."saves the document" = { terminal, workspace, expect }: [
+test."saves the document" = { terminal, workspace }: [
   (workspace.writeFile "document.txt" "draft\n")
   (terminal.open "${editor} ${workspace.path}/document.txt")
-  (expect.toBeVisible (terminal.getByText "draft"))
+  (expect (terminal.getByText "draft")).toBeVisible
   (terminal.press "<esc>")
 ];
 ```
@@ -21,7 +21,7 @@ are written in the same order a user or operator would perform them.
 [
   (terminal.open application)
   (terminal.press "<enter>")
-  (expect.toBeVisible (terminal.getByText "ready"))
+  (expect (terminal.getByText "ready")).toBeVisible
 ]
 ```
 
@@ -30,7 +30,7 @@ are written in the same order a user or operator would perform them.
 Fixtures describe the boundary under test. Request only what the test uses:
 
 ```nix
-{ terminal, workspace, expect }:
+{ terminal, workspace }:
 ```
 
 Use `terminal` for local command-line applications and `machine` or `machines`
@@ -43,9 +43,9 @@ for NixOS VMs. Semantic fixtures such as `service`, `filesystem`, `network`,
 Locators describe observable state; matchers assert against it:
 
 ```nix
-(expect.toBeVisible (terminal.getByText "ready"))
-(expect.toBeActive (machine.service "example.service"))
-(expect.toExist (machine.file "/run/example/ready"))
+(expect (terminal.getByText "ready")).toBeVisible
+(expect (machine.service "example.service")).toBeActive
+(expect (machine.file "/run/example/ready")).toExist
 ```
 
 Assertions retry observations until the configured timeout. Actions such as
@@ -57,8 +57,8 @@ keyboard input, service restarts, and mutating requests execute once.
 
 ```nix
 (test.step "service becomes usable" [
-  (expect.toBeActive (machine.service "example.service"))
-  (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
+  (expect (machine.service "example.service")).toBeActive
+  ((expect (machine.http.get "http://localhost/health")).toHaveStatus 200)
 ])
 ```
 
@@ -94,11 +94,11 @@ src/
 A test file is a per-system module:
 
 ```nix
-{ pkgs, ... }:
+{ pkgs, expect, ... }:
 {
-  test."shows a greeting" = { terminal, expect }: [
+  test."shows a greeting" = { terminal }: [
     (terminal.open pkgs.hello)
-    (expect.toBeVisible (terminal.getByText "Hello"))
+    (expect (terminal.getByText "Hello")).toBeVisible
   ];
 }
 ```

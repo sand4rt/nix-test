@@ -2,27 +2,19 @@
 
 # Fixture API
 
-This reference is generated from documentation beside the public Nix API.
-Edit the corresponding `@doc` block and regenerate this page instead of
-editing it directly.
-
 ## `browser`
 
 Browser actions run through Firefox and Selenium on the machine backend.
-Call `browser.configure machine` before other browser actions.
+Access a bound browser through `machine.browser`.
 
 ```nix
-browser.configure machine
-browser.open machine url
-browser.getByRole machine role { name ? ""; }
-browser.getByLabel machine label
-browser.getByPlaceholder machine placeholder
-browser.getByText machine text
-browser.getByTitle machine title
-browser.click element
-browser.fill element value
-browser.clear element
-browser.press element keys
+machine.browser.start
+machine.browser.open url
+machine.browser.getByRole role { name ? ""; }
+machine.browser.getByLabel label
+machine.browser.getByPlaceholder placeholder
+machine.browser.getByText text
+machine.browser.getByTitle title
 ```
 
 Locator methods return browser element locators. Action methods execute once.
@@ -33,10 +25,10 @@ Locator methods return browser element locators. Action methods execute once.
 
 ```nix
 container.locate machine name
-container.start target
-container.stop target
-container.restart target
-container.run target command
+(machine.container name).start
+(machine.container name).stop
+(machine.container name).restart
+(machine.container name).run command
 ```
 
 `locate` returns a declarative NixOS container locator. The remaining methods
@@ -61,8 +53,8 @@ matchers; input and screenshot methods execute once.
 
 ## `expect`
 
-`expect` contains every built-in and custom matcher after it has been bound to
-the resolved fixture set. Matcher signatures are listed in the
+Call `expect` with a locator to obtain its built-in and custom matchers.
+Matcher signatures are listed in the
 [Assertion API](assertions.md).
 
 ---
@@ -122,6 +114,9 @@ machine.container name
 machine.endpoint.tcp portOrOptions
 machine.endpoint.udp portOrOptions
 machine.http.get request
+machine.browser.start
+machine.browser.open url
+machine.browser.getByText text
 machine.open commandOrPackage
 machine.press keys
 machine.print
@@ -175,11 +170,11 @@ inspect the saved value without repeating the original side effect.
 ## `service`
 
 ```nix
-service.start target
-service.stop target
-service.restart target
-service.reload target
-service.logs target
+(machine.service name).start
+(machine.service name).stop
+(machine.service name).restart
+(machine.service name).reload
+(machine.service name).logs
 ```
 
 Targets come from `machine.service`, `machine.userService`, or `user.service`.

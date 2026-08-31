@@ -11,8 +11,8 @@
 
     ```nix
     test.step "service becomes usable" [
-      (expect.toBeActive (machine.service "example.service"))
-      (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
+      (expect (machine.service "example.service")).toBeActive
+      ((expect (machine.http.get "http://localhost/health")).toHaveStatus 200)
     ]
     ```
 

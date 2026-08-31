@@ -5,10 +5,10 @@ and TUI behavior that depends on terminal dimensions, keyboard input, cursor
 movement, or visible screen contents.
 
 ```nix
-test."opens a document" = { terminal, workspace, expect }: [
+test."opens a document" = { terminal, workspace }: [
   (workspace.writeFile "example.txt" "hello\n")
   (terminal.open "${editor} ${workspace.path}/example.txt")
-  (expect.toBeVisible (terminal.getByText "hello"))
+  (expect (terminal.getByText "hello")).toBeVisible
   (terminal.press "<esc>")
 ];
 ```
@@ -41,16 +41,13 @@ Literal text and named keys may be combined:
 ## Locate Visible Text
 
 ```nix
-(expect.toBeVisible (terminal.getByText "ready"))
-(expect.toEqual {
-actual = terminal.getByRegion {
+  (expect (terminal.getByText "ready")).toBeVisible
+  ((expect (terminal.getByRegion {
   left = 0;
   top = 0;
   width = 12;
   height = 1;
-};
-  expected = "Status: ready";
-})
+  })).toEqual "Status: ready")
 ```
 
 Text observations retry automatically. Add `terminal.print` to emit the current

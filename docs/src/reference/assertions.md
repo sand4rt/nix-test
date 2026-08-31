@@ -2,18 +2,14 @@
 
 # Assertion API
 
-This reference is generated from documentation beside the public Nix API.
-Edit the corresponding `@doc` block and regenerate this page instead of
-editing it directly.
-
 ## Browser
 
 ```nix
-expect.toBeVisibleInBrowser element
-expect.toBeEnabled element
-expect.toHaveValue element expected
-expect.toHaveLocation machine expectedSuffix
-expect.toHaveTitle machine expectedTitle
+(expect element).toBeVisible
+(expect element).toBeEnabled
+(expect element).toHaveValue expected
+(expect machine.browser).toHaveLocation expectedSuffix
+(expect machine.browser).toHaveTitle expectedTitle
 ```
 
 Browser assertions retry through Selenium until timeout.
@@ -23,8 +19,8 @@ Browser assertions retry through Selenium until timeout.
 ## Containers
 
 ```nix
-expect.toBeRunning container
-expect.toBeStopped container
+(expect container).toBeRunning
+(expect container).toBeStopped
 ```
 
 ---
@@ -32,7 +28,7 @@ expect.toBeStopped container
 ## Desktop
 
 ```nix
-expect.toBeVisibleOnDesktop target
+(expect target).toBeVisible
 ```
 
 Accepts desktop window and desktop text locators.
@@ -42,16 +38,16 @@ Accepts desktop window and desktop text locators.
 ## Filesystems and presence
 
 ```nix
-expect.toExist target
-expect.toBeAbsent target
-expect.toBeFile path
-expect.toBeDirectory path
-expect.toBeSymlink path
-expect.toBeMounted path
-expect.toHaveContent target expected
-expect.toPointTo target expected
-expect.toHaveMode target expected
-expect.toBeOwnedBy target user
+(expect target).toExist
+(expect target).toBeAbsent
+(expect path).toBeFile
+(expect path).toBeDirectory
+(expect path).toBeSymlink
+(expect path).toBeMounted
+(expect target).toHaveContent expected
+(expect target).toPointTo expected
+(expect target).toHaveMode expected
+(expect target).toBeOwnedBy user
 ```
 
 Presence matchers accept path and user locators where applicable. Filesystem
@@ -62,10 +58,10 @@ observations retry until the configured timeout.
 ## HTTP
 
 ```nix
-expect.toHaveStatus expected response
-expect.toHaveBody response expected
-expect.toHaveHeader response { name, value }
-expect.toHaveJsonValue { actual, path, expected }
+(expect response).toHaveStatus expected
+(expect response).toHaveBody expected
+(expect response).toHaveHeader { name, value }
+(expect response).toHaveJsonValue { path, value }
 ```
 
 HTTP matchers repeat the request until it matches or times out. Use them only
@@ -76,8 +72,8 @@ with idempotent requests; use `http.send` for mutating requests.
 ## Network endpoints
 
 ```nix
-expect.toBeReachable endpoint
-expect.toBeUnreachable endpoint
+(expect endpoint).toBeReachable
+(expect endpoint).toBeUnreachable
 ```
 
 Endpoint observations retry until the configured timeout.
@@ -87,9 +83,9 @@ Endpoint observations retry until the configured timeout.
 ## Saved results
 
 ```nix
-expect.toHaveExitCode expected result
-expect.toHaveStdout result expected
-expect.toContainStdout result expected
+(expect result).toHaveExitCode expected
+(expect result).toHaveStdout expected
+(expect result).toContainStdout expected
 ```
 
 Result assertions inspect values saved by `machine.run` or `http.send` and do
@@ -100,12 +96,12 @@ not repeat the original operation.
 ## Services and command output
 
 ```nix
-expect.toBeActive service
-expect.toBeInactive service
-expect.toBeFailed service
-expect.toHaveLog service text
-expect.toContain target text
-expect.toSucceed machineCommand
+(expect service).toBeActive
+(expect service).toBeInactive
+(expect service).toBeFailed
+(expect service).toHaveLog text
+(expect target).toContain text
+(expect machineCommand).toSucceed
 ```
 
 Service targets may be system or user services. `toContain` accepts service
@@ -116,7 +112,7 @@ logs and machine commands. All observations retry until timeout.
 ## Users
 
 ```nix
-expect.toBeMemberOf user group
+(expect user).toBeMemberOf group
 ```
 
 Use `toExist` and `toBeAbsent` for user existence.
@@ -132,7 +128,7 @@ Machine matchers receive targets created by `machine.command`.
 Retries the command until it succeeds or times out.
 
 ```nix
-expect.toEventuallySucceed (machine.command "test -e /run/example-ready")
+(expect (machine.command "test -e /run/example-ready")).toEventuallySucceed
 ```
 
 ### `toFail`
@@ -140,7 +136,7 @@ expect.toEventuallySucceed (machine.command "test -e /run/example-ready")
 Retries the command until it fails or the NixOS test driver times out.
 
 ```nix
-expect.toFail (machine.command "pgrep forbidden-process")
+(expect (machine.command "pgrep forbidden-process")).toFail
 ```
 
 ---
@@ -155,13 +151,13 @@ implementation. They retry until they pass or the active backend times out.
 <span class="backend-example" data-backend="terminal"></span>
 
 ```nix
-expect.toBeVisible (terminal.getByText "ready")
+  (expect (terminal.getByText "ready")).toBeVisible
 ```
 
 <span class="backend-example" data-backend="machine"></span>
 
 ```nix
-expect.toBeVisible (machine.getByText "ready")
+  (expect (machine.getByText "ready")).toBeVisible
 ```
 
 Passes when the locator's text appears in the visible terminal.
@@ -171,19 +167,13 @@ Passes when the locator's text appears in the visible terminal.
 <span class="backend-example" data-backend="terminal"></span>
 
 ```nix
-expect.toEqual {
-  actual = terminal.getByRegion region;
-  inherit expected;
-}
+  (expect (terminal.getByRegion region)).toEqual expected
 ```
 
 <span class="backend-example" data-backend="machine"></span>
 
 ```nix
-expect.toEqual {
-  actual = machine.getByRegion region;
-  inherit expected;
-}
+  (expect (machine.getByRegion region)).toEqual expected
 ```
 
 Passes when the selected terminal text equals `expected`. Trailing blank-cell

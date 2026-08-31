@@ -2,10 +2,6 @@
 
 # Terminal and Machine API
 
-This reference is generated from documentation beside the public Nix API.
-Edit the corresponding `@doc` block and regenerate this page instead of
-editing it directly.
-
 ## `expect` (terminal and machine)
 
 These matchers receive locators created by either terminal interface
@@ -16,13 +12,13 @@ implementation. They retry until they pass or the active backend times out.
 <span class="backend-example" data-backend="terminal"></span>
 
 ```nix
-expect.toBeVisible (terminal.getByText "ready")
+  (expect (terminal.getByText "ready")).toBeVisible
 ```
 
 <span class="backend-example" data-backend="machine"></span>
 
 ```nix
-expect.toBeVisible (machine.getByText "ready")
+  (expect (machine.getByText "ready")).toBeVisible
 ```
 
 Passes when the locator's text appears in the visible terminal.
@@ -32,19 +28,13 @@ Passes when the locator's text appears in the visible terminal.
 <span class="backend-example" data-backend="terminal"></span>
 
 ```nix
-expect.toEqual {
-  actual = terminal.getByRegion region;
-  inherit expected;
-}
+  (expect (terminal.getByRegion region)).toEqual expected
 ```
 
 <span class="backend-example" data-backend="machine"></span>
 
 ```nix
-expect.toEqual {
-  actual = machine.getByRegion region;
-  inherit expected;
-}
+  (expect (machine.getByRegion region)).toEqual expected
 ```
 
 Passes when the selected terminal text equals `expected`. Trailing blank-cell
@@ -77,7 +67,7 @@ machine.getByRegion {
 }
 ```
 
-Selects a rectangle of terminal cells for use with `expect.toEqual`. Trailing
+Selects a rectangle of terminal cells for use with `(expect region).toEqual`. Trailing
 blank-cell whitespace is omitted from the selected text.
 `left` and `top` default to `0`; `width` and `height` default to the remaining
 visible grid. Coordinates are zero-based.
@@ -99,7 +89,7 @@ machine.getByText text
 ```
 
 Locates literal text in the visible terminal for use with
-`expect.toBeVisible` on either backend.
+`(expect text).toBeVisible` on either backend.
 
 ---
 
@@ -171,7 +161,7 @@ Machine matchers receive targets created by `machine.command`.
 Retries the command until it succeeds or times out.
 
 ```nix
-expect.toEventuallySucceed (machine.command "test -e /run/example-ready")
+(expect (machine.command "test -e /run/example-ready")).toEventuallySucceed
 ```
 
 ### `toFail`
@@ -179,7 +169,7 @@ expect.toEventuallySucceed (machine.command "test -e /run/example-ready")
 Retries the command until it fails or the NixOS test driver times out.
 
 ```nix
-expect.toFail (machine.command "pgrep forbidden-process")
+(expect (machine.command "pgrep forbidden-process")).toFail
 ```
 
 ---

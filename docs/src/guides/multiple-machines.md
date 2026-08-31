@@ -3,7 +3,7 @@
 Use `machines` when a scenario crosses machine boundaries.
 
 ```nix
-test."client reaches server" = { machines, network, expect }: let
+test."client reaches server" = { machines, network }: let
   server = machines.node "server";
   client = machines.node "client";
 in [
@@ -12,8 +12,8 @@ in [
     client.modules = [ clientModule ];
   })
 
-  (expect.toBeActive (server.service "example.service"))
-  (expect.toSucceed (client.command "example-client server"))
+  (expect (server.service "example.service")).toBeActive
+  (expect (client.command "example-client server")).toSucceed
 ]
 ```
 
@@ -28,11 +28,11 @@ Use the network fixture to model failures explicitly:
 ```nix
 [
   (network.partition { left = [ server ]; right = [ client ]; })
-  (expect.toBeUnreachable (network.endpoint {
+  (expect (network.endpoint {
     from = client;
     host = "server";
     port = 8080;
-  }))
+  })).toBeUnreachable
   (network.heal { left = [ server ]; right = [ client ]; })
 ]
 ```

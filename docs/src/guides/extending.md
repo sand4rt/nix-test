@@ -24,10 +24,10 @@ The factory receives the complete fixture set. Its return value is injected as
 testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
   accepts = [ "appStatus" ];
   run = { expect, ... }: target:
-    expect.toBeVisible (inputs.tests.lib.mkLocator {
+    (expect (inputs.tests.lib.mkLocator {
       type = "terminalText";
       text = target.status;
-    });
+    })).toBeVisible;
 };
 ```
 

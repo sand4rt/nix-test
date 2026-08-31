@@ -2,10 +2,6 @@
 
 # Core API
 
-This reference is generated from documentation beside the public Nix API.
-Edit the corresponding `@doc` block and regenerate this page instead of
-editing it directly.
-
 ## `lib.fixtures`
 
 ```nix
@@ -65,10 +61,10 @@ compatible matchers; all other attributes hold locator-specific data.
 inputs.tests.lib.mkMatcher {
   accepts = [ "appStatus" ];
   run = { expect, ... }: target:
-    expect.toBeVisible (inputs.tests.lib.mkLocator {
-      type = "terminalText";
-      text = target.status;
-    });
+      (expect (inputs.tests.lib.mkLocator {
+        type = "terminalText";
+        text = target.status;
+      })).toBeVisible;
 }
 ```
 
@@ -102,10 +98,11 @@ inputs.tests.lib.mkTests {
 }
 ```
 
-Converts an attribute set of test callbacks into derivations suitable for
+Converts an attribute set of fixture callbacks into derivations suitable for
 `checks.${system}`. Attribute names become check names. `fixtures`, `locators`,
 and `matchers` use the same plugin format as the flake-parts module and default
-to empty attribute sets. Reserve `test.configure` for suite-wide defaults.
+to empty attribute sets. Each test must be a callback that receives only the
+fixtures it requests. Reserve `test.configure` for suite-wide defaults.
 
 ---
 
@@ -120,15 +117,15 @@ argument and call `test.step name actions`.
 ## `test`
 
 ```nix
-test."shows greeting" = { terminal, expect }: [
+test."shows greeting" = { terminal }: [
   (terminal.open pkgs.hello)
-  (expect.toBeVisible (terminal.getByText "Hello"))
+  (expect (terminal.getByText "Hello")).toBeVisible
 ];
 ```
 
-A mergeable attribute set of integration-test callbacks. Attribute names
-become check names. Each callback receives the resolved fixture set and
-returns an ordered list of actions. `test.configure` is reserved for
+A mergeable attribute set of integration-test fixture callbacks. Attribute
+names become check names. `test` and `expect` are module arguments; runtime
+fixtures are callback arguments. `test.configure` is reserved for
 suite-wide configuration.
 
 ---
@@ -160,8 +157,8 @@ the test log, making longer scenarios easier to read and debug.
 
 ```nix
 test.step "service becomes usable" [
-  (expect.toBeActive (machine.service "example.service"))
-  (expect.toHaveStatus 200 (machine.http.get "http://localhost/health"))
+  (expect (machine.service "example.service")).toBeActive
+  ((expect (machine.http.get "http://localhost/health")).toHaveStatus 200)
 ]
 ```
 
@@ -253,14 +250,14 @@ directly and receive `mkLocator` as a per-system module argument.
 testing.matchers.toBeReady = inputs.tests.lib.mkMatcher {
   accepts = [ "appStatus" ];
   run = { expect, ... }: target:
-    expect.toBeVisible (inputs.tests.lib.mkLocator {
+    (expect (inputs.tests.lib.mkLocator {
       type = "terminalText";
       text = target.status;
-    });
+    })).toBeVisible;
 };
 ```
 
 A mergeable attribute set of custom matcher factories. Each factory
 receives the complete fixture set and returns a matcher function exposed
-on `expect` under its attribute name. Use `lib.mkMatcher` to validate
+on the value returned by `expect target`. Use `lib.mkMatcher` to validate
 targets. Built-in matcher names cannot be replaced.

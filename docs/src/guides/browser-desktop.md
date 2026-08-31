@@ -3,13 +3,13 @@
 Browser tests favor accessibility-oriented locators rather than CSS selectors:
 
 ```nix
-let button = browser.getByRole machine "button" { name = "Sign in"; }; in [
+[
   (machine.configure { modules = [ browserPageModule ]; })
-  (browser.configure machine)
-  (browser.open machine "http://machine:8080/")
-  (browser.fill (browser.getByLabel machine "Username") "example")
-  (browser.click button)
-  (expect.toBeVisible button)
+  machine.browser.start
+  (machine.browser.open "http://machine:8080/")
+  ((machine.browser.getByLabel "Username").fill "example")
+  (machine.browser.getByRole "button" { name = "Sign in"; }).click
+  (expect (machine.browser.getByText "Welcome, example")).toBeVisible
 ]
 ```
 
@@ -23,7 +23,7 @@ text, and save screenshots:
 [
   (machine.configure { modules = [ desktopModule ]; })
   (desktop.press machine "meta-ret")
-  (expect.toBeVisible (desktop.getByWindow machine "Terminal"))
+  (expect (desktop.getByWindow machine "Terminal")).toBeVisible
   (desktop.type machine "hello")
   (desktop.screenshot machine "desktop")
 ]

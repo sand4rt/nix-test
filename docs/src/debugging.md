@@ -178,9 +178,9 @@ Assertions already retry until the configured timeout. Synchronize on visible
 or semantic state instead of adding delays:
 
 ```nix
-(expect.toBeVisible (terminal.getByText "ready"))
-(expect.toBeActive (machine.service "example.service"))
-(expect.toHaveStatus 200 (machine.http.get "http://example.test/health"))
+(expect (terminal.getByText "ready")).toBeVisible
+(expect (machine.service "example.service")).toBeActive
+((expect (machine.http.get "http://example.test/health")).toHaveStatus 200)
 ```
 
 Use `machine.command` for one-shot commands. Use `machine.run` when a command has

@@ -5,12 +5,12 @@
 `workspace` prepares mutable files under an isolated runtime directory:
 
 ```nix
-test."reads configuration" = { terminal, workspace, expect }: [
+test."reads configuration" = { terminal, workspace }: [
   (workspace.writeFile "config.toml" ''
     greeting = "Hello"
   '')
   (terminal.open "${application} --config ${workspace.path}/config.toml")
-  (expect.toBeVisible (terminal.getByText "Hello"))
+  (expect (terminal.getByText "Hello")).toBeVisible
 ];
 ```
 
@@ -23,14 +23,14 @@ rejected during Nix evaluation. Other actions include `makeDirectory`,
 Run side-effecting commands once and save their output:
 
 ```nix
-test."creates an item once" = { machine, result, expect }: [
+test."creates an item once" = { machine, result }: [
   (machine.configure { })
   (machine.run {
     command = "example create";
     saveAs = "create";
   })
-  (expect.toHaveExitCode 0 (result.command "create"))
-  (expect.toContainStdout (result.stdout "create") "created")
+  ((expect (result.command "create")).toHaveExitCode 0)
+  ((expect (result.stdout "create")).toContainStdout "created")
 ];
 ```
 
@@ -39,7 +39,7 @@ test."creates an item once" = { machine, result, expect }: [
 Use `http.send` for mutating requests:
 
 ```nix
-test."creates an item through HTTP" = { machine, http, result, expect }: [
+test."creates an item through HTTP" = { machine, http, result }: [
   (machine.configure { modules = [ apiModule ]; })
   (http.send machine {
     method = "POST";
@@ -47,8 +47,8 @@ test."creates an item through HTTP" = { machine, http, result, expect }: [
     body = ''{"name":"example"}'';
     saveAs = "create-item";
   })
-  (expect.toHaveExitCode 0 (result.command "create-item"))
-  (expect.toContainStdout (result.stdout "create-item") "created")
+  ((expect (result.command "create-item")).toHaveExitCode 0)
+  ((expect (result.stdout "create-item")).toContainStdout "created")
 ];
 ```
 

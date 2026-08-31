@@ -37,11 +37,11 @@ Change the system when your machine uses another supported architecture.
 Create `tests/hello.test.nix`:
 
 ```nix
-{ pkgs, ... }:
+{ pkgs, expect, ... }:
 {
-  test."shows a greeting" = { terminal, expect }: [
+  test."shows a greeting" = { terminal }: [
     (terminal.open pkgs.hello)
-    (expect.toBeVisible (terminal.getByText "Hello"))
+    (expect (terminal.getByText "Hello")).toBeVisible
   ];
 }
 ```
