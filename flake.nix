@@ -99,6 +99,7 @@
             inherit (pkgs) lib;
           };
         mkTests = import ./core/mk-tests.nix;
+        mkGithubMatrix = import ./core/github-matrix.nix;
         };
 
       packages = builtins.mapAttrs (
@@ -162,9 +163,14 @@
           mk-tests-unit = import ./core/mk-tests.test.nix {
             inherit pkgs;
             builders = import ./core/builders.nix;
+            mkGithubMatrix = self.lib.mkGithubMatrix;
             mkTests = self.lib.mkTests;
           };
         }
       ) nixpkgs.legacyPackages;
+
+      ciMatrix = builtins.mapAttrs (
+        system: checks: self.lib.mkGithubMatrix checks
+      ) self.checks;
     };
 }

@@ -3,6 +3,7 @@ let
   sources = [
     ../flake.nix
     ../overlay.nix
+    ../core/github-matrix.nix
     ../core/mk-tests.nix
     ../core/builders.nix
     ../module.nix

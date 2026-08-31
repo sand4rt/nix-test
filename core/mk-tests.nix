@@ -181,6 +181,17 @@ let
     ) actions;
   hasMachineActions = actions:
     builtins.any (action: builtins.elem action.type machineActionTypes) actions;
+  graphicalActionTypes = [
+    "browserAction"
+    "browserAssertion"
+    "browserConfigure"
+    "desktopAction"
+    "desktopAssertion"
+  ];
+  hasGraphicalActions = actions:
+    builtins.any (action: builtins.elem action.type graphicalActionTypes) actions;
+  withTestMetadata = metadata: derivation:
+    derivation // { nixTest = metadata; };
   renderAction =
     action:
     if action.type == "machinePredicate" then
@@ -295,7 +306,10 @@ builtins.mapAttrs (
       nodes = configuredNodes flatActions;
       browsers = browserConfigurations flatActions;
     in
-    pkgs.testers.runNixOSTest {
+    withTestMetadata {
+      backend = "machine";
+      graphical = hasGraphicalActions flatActions;
+    } (pkgs.testers.runNixOSTest {
       inherit name;
       skipTypeCheck = true;
       nodes = builtins.mapAttrs (_: options: {
@@ -326,14 +340,17 @@ builtins.mapAttrs (
           for browser in browsers.values():
             browser.quit()
       '';
-    }
+    })
   else
-    terminal {
+    withTestMetadata {
+      backend = "terminal";
+      graphical = false;
+    } (terminal {
       inherit name;
       inherit (configuration) timeout;
       inherit (configuration.terminal) columns rows;
       tests = { test, ... }: [
         (test name (_: case.actions))
       ];
-    }
+    })
 ) cases

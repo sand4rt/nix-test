@@ -41,6 +41,18 @@ and returns the value exposed to test callbacks.
 
 ---
 
+## `lib.mkGithubMatrix`
+
+```nix
+ciMatrix.${system} = inputs.tests.lib.mkGithubMatrix checks.${system};
+```
+
+Creates a GitHub Actions matrix from a set of checks. Tests produced by
+`lib.mkTests` include backend metadata; other derivations are treated as
+regular builds. The result can be passed directly to `fromJSON`.
+
+---
+
 ## `lib.mkLocator`
 
 ```nix

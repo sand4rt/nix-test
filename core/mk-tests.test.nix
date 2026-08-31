@@ -1,6 +1,7 @@
 {
   pkgs,
   builders,
+  mkGithubMatrix,
   mkTests,
 }:
 let
@@ -132,7 +133,10 @@ assert
   (mkTests {
   inherit pkgs;
   test.sample = { machine, ... }: [ (machine.command "true") ];
-  }).sample.type == "derivation";
+  }).sample.nixTest == {
+    backend = "machine";
+    graphical = false;
+  };
 assert fails (mkTests {
   inherit pkgs;
   test.sample = { expect }: [ expect ];
@@ -141,7 +145,39 @@ assert
   (mkTests {
     inherit pkgs;
     test.sample = { terminal, ... }: [ terminal.print ];
-  }).sample.type == "derivation";
+  }).sample.nixTest == {
+    backend = "terminal";
+    graphical = false;
+  };
+assert
+  (mkTests {
+    inherit pkgs;
+    test.sample = { machine, ... }: [ machine.browser.start ];
+  }).sample.nixTest == {
+    backend = "machine";
+    graphical = true;
+  };
+assert
+  mkGithubMatrix {
+    terminal = (mkTests {
+      inherit pkgs;
+      test.terminal = { terminal, ... }: [ terminal.print ];
+    }).terminal;
+    other = pkgs.runCommand "other" { } "touch $out";
+  } == {
+    include = [
+      {
+        backend = "build";
+        check = "other";
+        timeout = 15;
+      }
+      {
+        backend = "terminal";
+        check = "terminal";
+        timeout = 15;
+      }
+    ];
+  };
 pkgs.runCommand "nix-test-mk-tests-unit" { } ''
   touch "$out"
 ''
