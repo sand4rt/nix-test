@@ -73,9 +73,10 @@ persistent machine state.
 ## Run From Neovim
 
 [neotest-nix](https://github.com/khaneliman/neotest-nix) discovers Nix Test
-checks and runs them through [Neotest](https://github.com/nvim-neotest/neotest).
-Enable evaluated check discovery because each `test."name"` is exposed under
-`checks.${system}` rather than declared inline in `flake.nix`.
+declarations directly from `*.test.nix` files and maps each `test."name"` to
+its generated `checks.${system}."name"` output. Tests can therefore be browsed
+and run through [Neotest](https://github.com/nvim-neotest/neotest) without
+redeclaring them in `flake.nix` or enabling evaluated check discovery.
 
 With NVF, add the adapter and its dependencies:
 
@@ -93,12 +94,7 @@ With NVF, add the adapter and its dependencies:
       neotest.package = pkgs.vimPlugins.neotest;
       nvim-nio.package = pkgs.vimPlugins.nvim-nio;
       neotest-nix = {
-        package = pkgs.vimUtils.buildVimPlugin {
-          pname = "neotest-nix";
-          version = "unstable";
-          src = inputs.neotest-nix;
-          doCheck = false;
-        };
+        package = inputs.tests.packages.${system}.neotest-nix;
         after = [
           "neotest"
           "nvim-nio"
@@ -106,9 +102,7 @@ With NVF, add the adapter and its dependencies:
         setup = ''
           require("neotest").setup({
             adapters = {
-              require("neotest-nix")({
-                discover_eval_checks = true,
-              }),
+              require("neotest-nix"),
             },
           })
         '';
@@ -118,7 +112,9 @@ With NVF, add the adapter and its dependencies:
 }
 ```
 
-Open Neotest's summary to browse the generated checks, then run one test or the
-whole check tree with the usual Neotest commands. See the
+Open a `*.test.nix` file and Neotest's summary to browse its tests, then run one
+test or the whole file with the usual Neotest commands. The package exported by
+Nix Test applies the source-discovery patch until it is available in an upstream
+neotest-nix release. See the
 [neotest-nix repository](https://github.com/khaneliman/neotest-nix) for adapter
 options and keymap examples.

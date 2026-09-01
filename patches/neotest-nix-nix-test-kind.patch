@@ -1,0 +1,87 @@
+diff --git a/lua/neotest-nix/discover.lua b/lua/neotest-nix/discover.lua
+index 1edb5df..59c1c2a 100644
+--- a/lua/neotest-nix/discover.lua
++++ b/lua/neotest-nix/discover.lua
+@@ -309,6 +309,7 @@ local function flake_root(start)
+ end
+ 
+ ---@type fun(file_path: string): boolean
++local has_nix_test_binding
+ local has_nix_unit_assertion
+ 
+ ---@param file_path string
+@@ -336,7 +337,8 @@ local function recognized_non_flake_test_file(file_path)
+     return false
+   end
+ 
+-  return has_nix_unit_assertion(file_path)
++  return has_nix_test_binding(file_path)
++    or has_nix_unit_assertion(file_path)
+     or require("neotest-nix.runtests").is_runtests_file(file_path)
+ end
+ 
+@@ -384,6 +386,18 @@ function M.root(dir, opts)
+   return nil
+ end
+ 
++---@param file_path string
++---@return boolean
++has_nix_test_binding = function(file_path)
++  local content = cache.read_source(file_path)
++  if content == nil then
++    return false
++  end
++
++  local search = strip_nix_comments_and_strings(content)
++  return search:match("%f[%w]test%s*%.") ~= nil
++end
++
+ ---@param file_path string
+ ---@return boolean
+ has_nix_unit_assertion = function(file_path)
+@@ -554,6 +568,10 @@ function M.is_test_file(file_path, opts)
+     return false
+   end
+ 
++  if has_nix_test_binding(file_path) then
++    return true
++  end
++
+   if has_nix_unit_assertion(file_path) then
+     return true
+   end
+diff --git a/lua/neotest-nix/positions.lua b/lua/neotest-nix/positions.lua
+index 529b409..554ba18 100644
+--- a/lua/neotest-nix/positions.lua
++++ b/lua/neotest-nix/positions.lua
+@@ -406,8 +406,18 @@ function M.build_position(file_path, source, captured_nodes)
+     and parts[1] ~= "checks"
+     and has_outputs_context(binding, source)
+     and is_run_nixos_test_value(binding, source)
++  local is_nix_test = false
+   if not is_check and not is_nix_unit and not is_standalone_vm then
+-    return nil
++    local direct_parts = binding_attrpath_parts(binding, source)
++    is_nix_test = #direct_parts == 2
++      and direct_parts[1] == "test"
++      and direct_parts[2] ~= INTERPOLATION_PART
++      and direct_parts[2] ~= "configure"
++      and direct_parts[2] ~= "step"
++    if not is_nix_test then
++      return nil
++    end
++    parts = { "checks", "<system>", direct_parts[2] }
+   end
+ 
+   if dynamic_system then
+@@ -425,7 +435,9 @@ function M.build_position(file_path, source, captured_nodes)
+     range = { definition:range() },
+   }
+ 
+-  if is_check or is_standalone_vm then
++  if is_nix_test then
++    position.dynamic_system = true
++  elseif is_check or is_standalone_vm then
+     position.dynamic_system = dynamic_system or nil
+     position.test_script_range = test_script_range(binding, source)
+   elseif is_nix_unit then

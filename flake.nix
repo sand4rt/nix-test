@@ -133,9 +133,16 @@
             '';
             dontInstall = true;
           };
+          neotest-nix = pkgs.vimUtils.buildVimPlugin {
+            pname = "neotest-nix";
+            version = "unstable";
+            src = inputs.neotest-nix;
+            patches = [ ./patches/neotest-nix-nix-test-kind.patch ];
+            doCheck = false;
+          };
         in
         {
-          inherit docs generateDocs;
+          inherit docs generateDocs neotest-nix;
           default = docs;
         }
       ) nixpkgs.legacyPackages;

@@ -166,7 +166,7 @@ pkgs.runCommand name
         pythonPackages.pexpect
         pythonPackages.pyte
       ]))
-    ];
+    ] ++ filesystemSources;
     inherit filesystemSources;
   }
   ''
