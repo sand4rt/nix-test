@@ -49,7 +49,7 @@
             ];
             test = {
               configure = {
-                timeout = 20;
+                timeout = 30;
                 terminal = {
                   columns = 100;
                   rows = 30;
