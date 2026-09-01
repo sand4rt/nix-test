@@ -13,18 +13,6 @@ Most projects should use `lib.mkTests` or the flake-parts module instead.
 
 ---
 
-## `lib.mkAction`
-
-```nix
-inputs.tests.lib.mkAction "appOpen" { inherit path; }
-```
-
-Creates a typed test action for a runner to consume. Its payload must match
-the selected runner's requirements; terminal-runner actions must be JSON
-serializable.
-
----
-
 ## `lib.mkFixture`
 
 ```nix
@@ -69,21 +57,10 @@ inputs.tests.lib.mkMatcher {
 ```
 
 Creates a fixture-aware matcher factory. `accepts` lists valid target types;
-omit it for a matcher that accepts any tagged action, locator, or target.
+omit it for a matcher that accepts any tagged action or locator.
 Invalid targets fail during Nix evaluation before a runner is built. Compose
 matchers from runtime-backed locators and matchers unless a runner explicitly
 supports the custom action type.
-
----
-
-## `lib.mkTarget`
-
-```nix
-inputs.tests.lib.mkTarget "appStatus" { inherit name; }
-```
-
-Creates a typed matcher target. Matchers use the target type to reject values
-from an incompatible fixture.
 
 ---
 
@@ -93,24 +70,22 @@ from an incompatible fixture.
 inputs.tests.lib.mkTests {
   inherit pkgs test;
   fixtures = { };
-  locators = { };
   matchers = { };
 }
 ```
 
 Converts an attribute set of fixture callbacks into derivations suitable for
-`checks.${system}`. Attribute names become check names. `fixtures`, `locators`,
-and `matchers` use the same plugin format as the flake-parts module and default
-to empty attribute sets. Each test must be a callback that receives only the
+`checks.${system}`. Attribute names become check names. `fixtures` and
+`matchers` use the same plugin format as the flake-parts module and default to
+empty attribute sets. Each test must be a callback that receives only the
 fixtures it requests. Reserve `test.configure` for suite-wide defaults.
 
 ---
 
-## `lib.test`
+## `lib.test.step`
 
 Plain-flake callers use `lib.test.step name actions` to create named
-steps. Flake-parts users receive the same object as the `test` module
-argument and call `test.step name actions`.
+steps. Flake-parts users receive the same function as `test.step`.
 
 ---
 
@@ -121,12 +96,19 @@ test."shows greeting" = { terminal }: [
   (terminal.open pkgs.hello)
   (expect (terminal.getByText "Hello")).toBeVisible
 ];
+
+test."shared machine" = { machine }: {
+  test.step."service starts" = [
+    (expect (machine.service "example.service")).toBeActive
+  ];
+};
 ```
 
 A mergeable attribute set of integration-test fixture callbacks. Attribute
-names become check names. `test` and `expect` are module arguments; runtime
-fixtures are callback arguments. `test.configure` is reserved for
-suite-wide configuration.
+names become check names. A test callback may return an action list or a
+`test.step.<name>` attribute set of named subtests. `test` and `expect` are
+module arguments; runtime fixtures are callback arguments. `test.configure`
+is reserved for suite-wide configuration.
 
 ---
 
@@ -150,8 +132,12 @@ Standalone terminal dimensions default to 140 columns by 42 rows.
 
 ### `test.step`
 
-Groups actions into a named step. The step appears as a nested subtest in
-the test log, making longer scenarios easier to read and debug.
+Groups actions into a named step inside a test. The step appears as a nested
+subtest in the test log, making longer scenarios easier to read and debug.
+
+A test callback can alternatively return a `test.step.<name> = actions`
+attribute set for declarative top-level steps. This function remains available
+inside action lists for nested steps.
 
 **Usage**
 
@@ -172,47 +158,6 @@ contain other steps.
 
 ---
 
-## `testers.runTUITest`
-
-```nix
-pkgs.testers.runTUITest {
-  name = "example";
-  tests = { test, ... }: [ ];
-  columns = 140;
-  rows = 42;
-  timeout = 15;
-}
-```
-
-Builds one terminal test derivation. `columns`, `rows`, and `timeout` are
-optional and default to `140`, `42`, and `15` seconds respectively. Prefer
-`lib.mkTests` for independent flake checks; use this lower-level API when a
-single derivation should contain several terminal cases.
-
----
-
-## `testers.test`
-
-```nix
-pkgs.testers.test { type = "tui"; name = "example"; tests = tests; }
-pkgs.testers.test { type = "nixos"; name = "example"; testScript = testScript; }
-```
-
-Dispatches to the terminal or NixOS test runner. `type` defaults to `"tui"`
-and may be `"tui"` or `"nixos"`.
-
----
-
-## `testers.testCase`
-
-```nix
-pkgs.testers.testCase name callback
-```
-
-Constructs a named test-case value for callers using the overlay API.
-
----
-
 ## `testing.fixtures`
 
 ```nix
@@ -227,20 +172,6 @@ testing.fixtures.app = inputs.tests.lib.mkFixture ({ terminal, filesystem, ... }
 A mergeable attribute set of fixtures created with `lib.mkFixture`. Each
 factory receives the complete fixture set and returns the value injected
 under its attribute name. Built-in fixture names cannot be replaced.
-
----
-
-## `testing.locators`
-
-```nix
-testing.locators.app.getByStatus = status: mkLocator {
-  type = "appStatus";
-  inherit status;
-};
-```
-
-Locators grouped by their owning fixture. Locator modules can be imported
-directly and receive `mkLocator` as a per-system module argument.
 
 ---
 

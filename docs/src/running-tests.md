@@ -18,59 +18,6 @@ nix flake check
 
 Use `nix flake show` to list generated check names.
 
-## Run From Neovim
-
-[neotest-nix](https://github.com/khaneliman/neotest-nix) discovers Nix Test
-checks and runs them through [Neotest](https://github.com/nvim-neotest/neotest).
-Enable evaluated check discovery because each `test."name"` is exposed under
-`checks.${system}` rather than declared inline in `flake.nix`.
-
-With NVF, add the adapter and its dependencies:
-
-```nix
-{
-  vim = {
-    extraPackages = [ pkgs.nix ];
-
-    treesitter = {
-      enable = true;
-      grammars = [ pkgs.vimPlugins.nvim-treesitter.grammarPlugins.nix ];
-    };
-
-    extraPlugins = {
-      neotest.package = pkgs.vimPlugins.neotest;
-      nvim-nio.package = pkgs.vimPlugins.nvim-nio;
-      neotest-nix = {
-        package = pkgs.vimUtils.buildVimPlugin {
-          pname = "neotest-nix";
-          version = "unstable";
-          src = inputs.neotest-nix;
-          doCheck = false;
-        };
-        after = [
-          "neotest"
-          "nvim-nio"
-        ];
-        setup = ''
-          require("neotest").setup({
-            adapters = {
-              require("neotest-nix")({
-                discover_eval_checks = true,
-              }),
-            },
-          })
-        '';
-      };
-    };
-  };
-}
-```
-
-Open Neotest's summary to browse the generated checks, then run one test or the
-whole check tree with the usual Neotest commands. See the
-[neotest-nix repository](https://github.com/khaneliman/neotest-nix) for adapter
-options and keymap examples.
-
 ## Without Flake-parts
 
 Pass tests directly to `lib.mkTests`:
@@ -87,8 +34,8 @@ in {
 }
 ```
 
-`fixtures`, `locators`, and `matchers` accept the same plugin values as their
-flake-parts options.
+`fixtures` and `matchers` accept the same plugin values as their flake-parts
+options.
 
 ## Without Flakes
 
@@ -122,3 +69,52 @@ nix build \
 
 Continue with [Debugging](debugging.md) for VM shells, SSH, port forwarding, and
 persistent machine state.
+
+## Run From Neovim
+
+[neotest-nix](https://github.com/khaneliman/neotest-nix) discovers Nix Test
+declarations directly from `*.test.nix` files and maps each `test."name"` to
+its generated `checks.${system}."name"` output. Tests can therefore be browsed
+and run through [Neotest](https://github.com/nvim-neotest/neotest) without
+redeclaring them in `flake.nix` or enabling evaluated check discovery.
+
+With NVF, add the adapter and its dependencies:
+
+```nix
+{
+  vim = {
+    extraPackages = [ pkgs.nix ];
+
+    treesitter = {
+      enable = true;
+      grammars = [ pkgs.vimPlugins.nvim-treesitter.grammarPlugins.nix ];
+    };
+
+    extraPlugins = {
+      neotest.package = pkgs.vimPlugins.neotest;
+      nvim-nio.package = pkgs.vimPlugins.nvim-nio;
+      neotest-nix = {
+        package = inputs.tests.packages.${system}.neotest-nix;
+        after = [
+          "neotest"
+          "nvim-nio"
+        ];
+        setup = ''
+          require("neotest").setup({
+            adapters = {
+              require("neotest-nix"),
+            },
+          })
+        '';
+      };
+    };
+  };
+}
+```
+
+Open a `*.test.nix` file and Neotest's summary to browse its tests, then run one
+test or the whole file with the usual Neotest commands. The package exported by
+Nix Test applies the source-discovery patch until it is available in an upstream
+neotest-nix release. See the
+[neotest-nix repository](https://github.com/khaneliman/neotest-nix) for adapter
+options and keymap examples.

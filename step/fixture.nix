@@ -4,8 +4,12 @@
     @doc test.step
     ### `test.step`
 
-    Groups actions into a named step. The step appears as a nested subtest in
-    the test log, making longer scenarios easier to read and debug.
+    Groups actions into a named step inside a test. The step appears as a nested
+    subtest in the test log, making longer scenarios easier to read and debug.
+
+    A test callback can alternatively return a `test.step.<name> = actions`
+    attribute set for declarative top-level steps. This function remains available
+    inside action lists for nested steps.
 
     **Usage**
 

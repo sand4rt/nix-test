@@ -2,7 +2,6 @@
 let
   sources = [
     ../flake.nix
-    ../overlay.nix
     ../core/mk-tests.nix
     ../core/builders.nix
     ../module.nix
@@ -85,8 +84,7 @@ let
       entry.name == "test"
       || lib.hasPrefix "test." entry.name
       || lib.hasPrefix "testing." entry.name
-      || lib.hasPrefix "lib." entry.name
-      || lib.hasPrefix "testers." entry.name;
+      || lib.hasPrefix "lib." entry.name;
     terminal =
       entry:
       entry.name == "expect.terminal-machine"

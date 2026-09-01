@@ -4,7 +4,7 @@
 
 ## `browser`
 
-Browser actions run through Firefox and Selenium on the machine backend.
+Browser actions run through Playwright on the machine backend.
 Access a bound browser through `machine.browser`.
 
 ```nix

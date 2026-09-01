@@ -14,20 +14,22 @@
   ```
 */
 let
-  assertion = target: expected: mkAction "machinePredicate" {
+  assertion = target: command: mkAction "machinePredicate" {
     inherit (target) node description;
-    command = "test \"$(nixos-container status ${lib.escapeShellArg target.name})\" = ${expected}";
+    inherit command;
   };
+  isActive = target:
+    "systemctl is-active --quiet container@${lib.escapeShellArg target.name}.service";
 in
 {
   testing.matchers = {
     toBeRunning = mkMatcher {
       accepts = [ "container" ];
-      run = _fixtures: target: assertion target "RUNNING";
+      run = _fixtures: target: assertion target (isActive target);
     };
     toBeStopped = mkMatcher {
       accepts = [ "container" ];
-      run = _fixtures: target: assertion target "STOPPED";
+      run = _fixtures: target: assertion target "! ${isActive target}";
     };
   };
 }

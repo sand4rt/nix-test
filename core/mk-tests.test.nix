@@ -103,11 +103,6 @@ assert fails (mkTests {
 assert fails (mkTests {
   inherit pkgs;
   test.sample = actions;
-  locators.missing.getByName = _: builders.mkLocator { type = "missing"; };
-});
-assert fails (mkTests {
-  inherit pkgs;
-  test.sample = actions;
   matchers.toBeVisible = builders.mkMatcher {
     run = _: target: target;
   };
@@ -130,9 +125,29 @@ assert fails (mkTests {
 });
 assert
   (mkTests {
+    inherit pkgs;
+    test.sample = { machine, ... }: [ (machine.command "true") ];
+  }).sample.nixTest == {
+    backend = "machine";
+    graphical = false;
+  };
+assert
+  (mkTests {
+    inherit pkgs;
+    test.sample = { machine, ... }: {
+      test.step.first = [ (machine.command "true") ];
+      test.step.second = [ (machine.command "true") ];
+    };
+  }).sample.nixTest == {
+    backend = "machine";
+    graphical = false;
+  };
+assert fails (mkTests {
   inherit pkgs;
-  test.sample = { machine, ... }: [ (machine.command "true") ];
-  }).sample.type == "derivation";
+  test.sample = _: {
+    test.step.invalid = [ { type = "notAnAction"; } ];
+  };
+});
 assert fails (mkTests {
   inherit pkgs;
   test.sample = { expect }: [ expect ];
@@ -141,7 +156,18 @@ assert
   (mkTests {
     inherit pkgs;
     test.sample = { terminal, ... }: [ terminal.print ];
-  }).sample.type == "derivation";
+  }).sample.nixTest == {
+    backend = "terminal";
+    graphical = false;
+  };
+assert
+  (mkTests {
+    inherit pkgs;
+    test.sample = { machine, ... }: [ machine.browser.start ];
+  }).sample.nixTest == {
+    backend = "machine";
+    graphical = true;
+  };
 pkgs.runCommand "nix-test-mk-tests-unit" { } ''
   touch "$out"
 ''

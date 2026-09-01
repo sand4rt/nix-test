@@ -23,7 +23,7 @@ let
   };
   reachable = target:
     if target.transport == "tcp" then
-      "${lib.getExe pkgs.curl} --silent --fail --max-time 1 telnet://${target.host}:${toString target.port} </dev/null"
+      "${pkgs.netcat}/bin/nc -z -w1 ${lib.escapeShellArg target.host} ${toString target.port}"
     else
       "${pkgs.netcat}/bin/nc -zu -w1 ${lib.escapeShellArg target.host} ${toString target.port}";
 in

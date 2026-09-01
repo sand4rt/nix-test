@@ -6,7 +6,7 @@ fixtures it requests and returns an ordered list of actions.
 ```nix
 test."saves the document" = { terminal, filesystem }: [
   (filesystem.writeFile "document.txt" "draft\n")
-  (terminal.open "${editor} ${filesystem.root}/document.txt")
+  (terminal.open "${pkgs.lib.getExe pkgs.neovim} ${filesystem.root}/document.txt")
   (expect (terminal.getByText "draft")).toBeVisible
   (terminal.press "<esc>")
 ];

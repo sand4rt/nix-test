@@ -5,12 +5,29 @@
       modules = [
         {
           services.xserver.enable = true;
-          services.xserver.displayManager.startx.enable = true;
+          services.xserver.displayManager.lightdm = {
+            enable = true;
+            greeter.enable = false;
+          };
+          services.xserver.displayManager.xserverArgs = [ "-ac" ];
+          services.xserver.desktopManager.xterm.enable = true;
+          services.xserver.displayManager.sessionCommands = ''
+            ${pkgs.xterm}/bin/xterm -T Welcome -e ${pkgs.coreutils}/bin/sleep 60 &
+          '';
+          services.displayManager = {
+            autoLogin = {
+              enable = true;
+              user = "test";
+            };
+            defaultSession = "xterm";
+          };
+          users.users.test = {
+            isNormalUser = true;
+          };
           environment.systemPackages = [ pkgs.xterm ];
         }
       ];
     })
-    (machine.command "startx ${pkgs.xterm}/bin/xterm -T 'Welcome' -- :0 >/tmp/x.log 2>&1 &")
     (expect (desktop.getByWindow machine "Welcome")).toBeVisible
     (desktop.type machine "hello")
     (desktop.screenshot machine "welcome-window")

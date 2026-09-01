@@ -125,6 +125,7 @@
 
             def open(self, command, fixture, rows, columns):
                 self.close()
+                self.screen.reset()
                 args = [arg.replace("$fixture", fixture) for arg in shlex.split(command)]
                 self.child = pexpect.spawn(
                     args[0], args[1:], cwd=fixture,

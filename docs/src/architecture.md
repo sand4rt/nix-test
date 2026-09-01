@@ -68,11 +68,11 @@ and that `print` is an action. Each backend still implements observation through
 its native runtime: the standalone backend reads a `pyte` cell grid, while the
 machine backend captures a `tmux` pane through the NixOS test driver.
 
-Fixtures, actions, locators, other matcher targets, and matcher factories are
-created with `lib.mkFixture`, `lib.mkAction`, `lib.mkLocator`, `lib.mkTarget`,
-and `lib.mkMatcher`. These constructors validate value shape and matcher target
-compatibility during Nix evaluation. The terminal fixture interface is an
-internal contract for the two built-in backends; custom fixtures are not
+Custom fixtures, locators, and matcher factories are created with
+`lib.mkFixture`, `lib.mkLocator`, and `lib.mkMatcher`. Actions and the runner
+protocol remain internal. These constructors validate value shape and matcher
+target compatibility during Nix evaluation. The terminal fixture interface is
+an internal contract for the two built-in backends; custom fixtures are not
 required to implement it.
 
 Semantic machine locators compile to retrying NixOS driver predicates. Actions

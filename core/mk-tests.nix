@@ -6,22 +6,20 @@
   inputs.tests.lib.mkTests {
     inherit pkgs test;
     fixtures = { };
-    locators = { };
     matchers = { };
   }
   ```
 
   Converts an attribute set of fixture callbacks into derivations suitable for
-  `checks.${system}`. Attribute names become check names. `fixtures`, `locators`,
-  and `matchers` use the same plugin format as the flake-parts module and default
-  to empty attribute sets. Each test must be a callback that receives only the
+  `checks.${system}`. Attribute names become check names. `fixtures` and
+  `matchers` use the same plugin format as the flake-parts module and default to
+  empty attribute sets. Each test must be a callback that receives only the
   fixtures it requests. Reserve `test.configure` for suite-wide defaults.
 */
 {
   pkgs,
   test,
   fixtures ? { },
-  locators ? { },
   matchers ? { },
 }:
 let
@@ -34,11 +32,10 @@ let
     inherit pkgs;
     inherit (pkgs) lib;
     fixtureFactories = fixtures;
-    inherit locators;
     matcherFactories = matchers;
   };
   testFixtures = builtins.removeAttrs resolvedFixtures [ "expect" ];
-  terminal = (import ../overlay.nix pkgs pkgs).testers.tui;
+  terminal = import ../terminal/run-test.nix { inherit pkgs; };
   defaults = {
     timeout = 15;
     terminal = {
@@ -113,9 +110,6 @@ let
   );
   fixtureCollisions = builtins.filter (name: builtins.hasAttr name fixtures) builtInNames;
   matcherCollisions = builtins.filter (name: builtins.hasAttr name matchers) builtInMatchers;
-  unknownLocatorOwners = builtins.filter (
-    name: !(builtins.elem name builtInNames) && !(builtins.hasAttr name fixtures)
-  ) (builtins.attrNames locators);
   invalidFixtures = builtins.filter (
     name:
     let
@@ -125,13 +119,32 @@ let
   ) (builtins.attrNames fixtures);
   cases = builtins.mapAttrs (
     name: callback:
-    {
-      inherit name;
-      actions =
+    let
+      result =
         if builtins.isFunction callback then
           callback (builtins.intersectAttrs (builtins.functionArgs callback) testFixtures)
         else
           callback;
+    in
+    {
+      inherit name;
+      actions =
+        if
+          builtins.isAttrs result
+          && builtins.attrNames result == [ "test" ]
+          && builtins.isAttrs result.test
+          && builtins.attrNames result.test == [ "step" ]
+          && builtins.isAttrs result.test.step
+        then
+          pkgs.lib.mapAttrsToList (
+            stepName: actions:
+            builders.mkAction "step" {
+              name = stepName;
+              inherit actions;
+            }
+          ) result.test.step
+        else
+          result;
     }
   ) testCases;
   invalidCases = builtins.filter (
@@ -181,6 +194,17 @@ let
     ) actions;
   hasMachineActions = actions:
     builtins.any (action: builtins.elem action.type machineActionTypes) actions;
+  graphicalActionTypes = [
+    "browserAction"
+    "browserAssertion"
+    "browserConfigure"
+    "desktopAction"
+    "desktopAssertion"
+  ];
+  hasGraphicalActions = actions:
+    builtins.any (action: builtins.elem action.type graphicalActionTypes) actions;
+  withTestMetadata = metadata: derivation:
+    derivation // { nixTest = metadata; };
   renderAction =
     action:
     if action.type == "machinePredicate" then
@@ -278,12 +302,10 @@ assert pkgs.lib.assertMsg (invalidFixtures == [ ])
   "nix-test: custom fixtures must be created with lib.mkFixture: ${builtins.concatStringsSep ", " invalidFixtures}";
 assert pkgs.lib.assertMsg (matcherCollisions == [ ])
   "nix-test: custom matchers cannot replace built-ins: ${builtins.concatStringsSep ", " matcherCollisions}";
-assert pkgs.lib.assertMsg (unknownLocatorOwners == [ ])
-  "nix-test: locators reference unknown fixtures: ${builtins.concatStringsSep ", " unknownLocatorOwners}";
 assert pkgs.lib.assertMsg (unknownCaseFixtures == [ ])
   "nix-test: tests request unknown fixtures: ${builtins.concatStringsSep ", " unknownCaseFixtures}";
 assert pkgs.lib.assertMsg (invalidCases == [ ])
-  "nix-test: tests must return only actions created with lib.mkAction: ${builtins.concatStringsSep ", " invalidCases}";
+  "nix-test: tests must return actions created by fixtures: ${builtins.concatStringsSep ", " invalidCases}";
 assert pkgs.lib.assertMsg (invalidNamedMachineFilesystems == [ ])
   "nix-test: filesystem mutations in machine tests require the default machine; named-machine staging is not yet supported: ${builtins.concatStringsSep ", " invalidNamedMachineFilesystems}";
 builtins.mapAttrs (
@@ -295,7 +317,10 @@ builtins.mapAttrs (
       nodes = configuredNodes flatActions;
       browsers = browserConfigurations flatActions;
     in
-    pkgs.testers.runNixOSTest {
+    withTestMetadata {
+      backend = "machine";
+      graphical = hasGraphicalActions flatActions;
+    } (pkgs.testers.runNixOSTest {
       inherit name;
       skipTypeCheck = true;
       nodes = builtins.mapAttrs (_: options: {
@@ -307,15 +332,13 @@ builtins.mapAttrs (
              pkgs.jq
              pkgs.netcat
              pkgs.tmux
-           ];
+            ];
          }
        ]
         ++ options.modules;
       }) nodes;
-      extraPythonPackages = pythonPackages: pkgs.lib.optional (browsers != [ ]) pythonPackages.selenium;
       testScript = ''
         timeout = ${toString configuration.timeout}
-        browsers = {}
         results = {}
         try:
           start_all()
@@ -323,17 +346,19 @@ builtins.mapAttrs (
           with subtest(${builtins.toJSON name}):
         ${renderActions "    " actions}
         finally:
-          for browser in browsers.values():
-            browser.quit()
+          pass
       '';
-    }
+    })
   else
-    terminal {
+    withTestMetadata {
+      backend = "terminal";
+      graphical = false;
+    } (terminal {
       inherit name;
       inherit (configuration) timeout;
       inherit (configuration.terminal) columns rows;
       tests = { test, ... }: [
         (test name (_: case.actions))
       ];
-    }
+    })
 ) cases

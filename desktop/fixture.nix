@@ -32,7 +32,10 @@ in
         toBeVisible = mkAction "desktopAssertion" {
           node = node.name;
           inherit description;
-          code = ''${nodeExpression node.name}.wait_for_window(${builtins.toJSON title}, timeout=timeout)'';
+          code = ''
+            ${nodeExpression node.name}.wait_for_x(timeout=timeout)
+            ${nodeExpression node.name}.wait_for_window(${builtins.toJSON title}, timeout=timeout)
+          '';
         };
       };
     getByText = node: text:
@@ -44,7 +47,10 @@ in
         toBeVisible = mkAction "desktopAssertion" {
           node = node.name;
           inherit description;
-          code = ''${nodeExpression node.name}.wait_for_text(${builtins.toJSON text}, timeout=timeout)'';
+          code = ''
+            ${nodeExpression node.name}.wait_for_x(timeout=timeout)
+            ${nodeExpression node.name}.wait_for_text(${builtins.toJSON text}, timeout=timeout)
+          '';
         };
       };
     press = node: keys: mkAction "desktopAction" {

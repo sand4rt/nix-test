@@ -8,185 +8,132 @@
       ...
     }:
     let
-      inherit (inputs)
-        self
-        nixpkgs
-        flake-parts
-        neotest-nix
-        nvf
-        ;
+      inherit (inputs) nvf;
+      neotestNix = inputs.self.packages.${system}.neotest-nix;
 
-      targetCheck =
-        let
-          inherit (self.lib.fixtures { inherit pkgs; }) terminal expect;
-        in
-        (self.lib.mkTests {
-          inherit pkgs;
-          test."interop passes" = { terminal }: [
-            (terminal.open pkgs.hello)
-            (expect (terminal.getByText "Hello")).toBeVisible
-          ];
-        })."interop passes";
-
-      frameworkFlakeDefinition = pkgs.writeText "flake.nix" ''
-        {
-          inputs = {
-            nixpkgs.url = "path:${nixpkgs}";
-            flake-parts = {
-              url = "path:${flake-parts}";
-              inputs.nixpkgs-lib.follows = "nixpkgs";
-            };
-          };
-
-          outputs = { nixpkgs, ... }: {
-            flakeModules.default = import ./module.nix;
-            lib = (import ./core/builders.nix) // {
-              fixtures = { pkgs }: import ./core/fixtures.nix {
-                inherit (pkgs) lib;
+      neovim = (nvf.lib.neovimConfiguration {
+        inherit pkgs;
+        modules = [
+          {
+            config.vim = {
+              extraPackages = [ pkgs.nix ];
+              treesitter = {
+                enable = true;
+                grammars = [ pkgs.vimPlugins.nvim-treesitter.grammarPlugins.nix ];
               };
-              mkTests = import ./core/mk-tests.nix;
-            };
-          };
-        }
-      '';
-
-      frameworkFlake = pkgs.runCommand "nix-test-public-flake" { } ''
-        cp -R ${self} "$out"
-        chmod -R u+w "$out"
-        cp ${frameworkFlakeDefinition} "$out/flake.nix"
-        rm -f "$out/flake.lock"
-      '';
-
-      fixtureTestContent = ''
-        { pkgs, expect, ... }:
-        {
-          test."interop passes" = { terminal }: [
-            (terminal.open pkgs.hello)
-            (expect (terminal.getByText "Hello")).toBeVisible
-          ];
-        }
-      '';
-      fixtureTest = pkgs.writeText "fixture.test.nix" fixtureTestContent;
-
-      fixtureFlakeContent = ''
-        {
-          inputs = {
-            nixpkgs.url = "path:${nixpkgs}";
-            flake-parts = {
-              url = "path:${flake-parts}";
-              inputs.nixpkgs-lib.follows = "nixpkgs";
-            };
-            tests = {
-              url = "path:${frameworkFlake}";
-              inputs.nixpkgs.follows = "nixpkgs";
-              inputs.flake-parts.follows = "flake-parts";
-            };
-          };
-
-          outputs = inputs:
-            inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-              imports = [ inputs.tests.flakeModules.default ];
-              systems = [ "${system}" ];
-              perSystem = { ... }: {
-                imports = [ ./fixture.test.nix ];
-              };
-            };
-        }
-      '';
-      fixtureFlake = pkgs.writeText "flake.nix" fixtureFlakeContent;
-
-      neovim =
-        let
-          neotestNix = pkgs.vimUtils.buildVimPlugin {
-            pname = "neotest-nix";
-            version = "unstable";
-            src = neotest-nix;
-            doCheck = false;
-          };
-        in
-        (nvf.lib.neovimConfiguration {
-          inherit pkgs;
-          modules = [
-            {
-              config.vim = {
-                extraPackages = [ pkgs.nix ];
-                treesitter = {
-                  enable = true;
-                  grammars = [ pkgs.vimPlugins.nvim-treesitter.grammarPlugins.nix ];
-                };
-                extraPlugins.neotest.package = pkgs.vimPlugins.neotest;
-                extraPlugins.nvim-nio.package = pkgs.vimPlugins.nvim-nio;
-                extraPlugins.neotest-nix = {
+              extraPlugins = {
+                neotest.package = pkgs.vimPlugins.neotest;
+                nvim-nio.package = pkgs.vimPlugins.nvim-nio;
+                plenary-nvim.package = pkgs.vimPlugins.plenary-nvim;
+                neotest-nix = {
                   package = neotestNix;
                   after = [
                     "neotest"
                     "nvim-nio"
+                    "plenary-nvim"
                   ];
                   setup = ''
                     require("neotest").setup({
-                      icons = {
-                        child_indent = "  ",
-                        child_prefix = "",
-                        collapsed = "+",
-                        expanded = "-",
-                        failed = "F",
-                        final_child_prefix = "",
-                        non_collapsible = " ",
-                        passed = "P",
-                        running = "R",
-                        skipped = "S",
-                        unknown = "?",
+                      output = {
+                        open_on_run = false,
                       },
                       adapters = {
-                        require("neotest-nix")({
-                          discover_eval_checks = true,
-                        }),
+                        require("neotest-nix"),
                       },
                     })
                   '';
                 };
               };
-            }
-          ];
-        }).neovim;
+              keymaps = [
+                {
+                  key = "<leader>ts";
+                  mode = "n";
+                  action = ":lua local path = vim.api.nvim_buf_get_name(0); local summary = require('neotest').summary; summary.close(); summary.open({ enter = true }); summary:expand(path, true)<CR>";
+                }
+                {
+                  key = "<leader>tr";
+                  mode = "n";
+                  lua = true;
+                  action = /* lua */ ''
+                    function()
+                       local neotest = require("neotest")
+                       local names = {}
+
+                       for _, id in ipairs(neotest.state.adapter_ids()) do
+                         local tree = neotest.state.positions(id)
+                        if tree then
+                          for _, position in tree:iter() do
+                             local data = position
+                             if data.type == "test" then
+                               table.insert(names, data.name)
+                             end
+                           end
+                         end
+                       end
+
+                       table.sort(names)
+                       vim.api.nvim_echo({ {
+                         "DISCOVERED: " .. table.concat(names, ", "),
+                       } }, false, {})
+                    end
+                  '';
+                }
+              ];
+            };
+          }
+        ];
+      }).neovim;
     in
     {
-      test."neotest-nix interoperability" = { machine, filesystem }: [
-          (machine.configure {
-            modules = [
-              {
-                nix.settings.experimental-features = [
-                  "nix-command"
-                  "flakes"
-                ];
-                environment.systemPackages = [
-                  neovim
-                  pkgs.nix
-                ];
-                virtualisation.additionalPaths = [
-                  self
-                  frameworkFlake
-                  nixpkgs
-                  flake-parts
-                  targetCheck
-                  fixtureFlake
-                  fixtureTest
-                ];
-              }
-            ];
-          })
-          (filesystem.writeFile "flake.nix" fixtureFlakeContent)
-          (filesystem.writeFile "fixture.test.nix" fixtureTestContent)
-          (machine.command ''
-            cd ${filesystem.root}
-            nix flake lock --offline
-            nix eval --json --apply builtins.attrNames .#checks.${system}
-          '')
-          (machine.open "cd ${filesystem.root} && nvim flake.nix")
-          (machine.press ":lua require('neotest').summary.open()")
-          (machine.press "<enter>")
-          (expect (machine.getByText "flake.nix")).toBeVisible
-          machine.print
+      test."first project test" = { terminal }: {
+        test.step."opens the program" = [
+          terminal.print
+        ];
+        test.step."observes its output" = [
+          terminal.print
+        ];
+      };
+
+      test."second project test" = { terminal }: [
+        terminal.print
       ];
+
+      test."opens neotest summary" =
+        {
+          terminal,
+          filesystem,
+        }:
+        [
+          (filesystem.writeFile "flake.nix" /* nix */ ''
+            { outputs = { self }: { }; }
+          '')
+          (filesystem.writeFile "project.test.nix" /* nix */ ''
+            {
+              test."first project test" = { terminal }: {
+                test.step."opens the program" = [
+                  terminal.print
+                ];
+                test.step."observes its output" = [
+                  terminal.print
+                ];
+              };
+
+              test."second project test" = { terminal }: [
+                terminal.print
+              ];
+            }
+          '')
+          (terminal.open "env PATH=${
+            pkgs.lib.makeBinPath [
+              pkgs.nix
+              pkgs.git
+            ]
+          } ${pkgs.lib.getExe neovim} ${filesystem.root}/project.test.nix")
+          (expect (terminal.getByText "project.test.nix")).toBeVisible
+          (terminal.press "<leader>ts")
+          (expect (terminal.getByText "neotest-nix  2")).toBeVisible
+          (terminal.press "<leader>tr")
+          (expect (terminal.getByText "DISCOVERED: first project test, second project test")).toBeVisible
+        ];
     };
 }

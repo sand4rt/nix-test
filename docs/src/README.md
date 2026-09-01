@@ -10,7 +10,7 @@ Use Nix Test to exercise:
 - NixOS services and machines through the NixOS test driver
 - files, users, containers, networks, and HTTP endpoints
 - browser and desktop behavior
-- custom fixtures, locators, and matchers
+- custom fixtures and matchers with typed locators
 
 ```nix
 { pkgs, expect, ... }:
