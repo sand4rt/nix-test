@@ -85,3 +85,15 @@ index 529b409..554ba18 100644
      position.dynamic_system = dynamic_system or nil
      position.test_script_range = test_script_range(binding, source)
    elseif is_nix_unit then
+diff --git a/lua/neotest-nix/spec.lua b/lua/neotest-nix/spec.lua
+index 187654f..e865c1f 100644
+--- a/lua/neotest-nix/spec.lua
++++ b/lua/neotest-nix/spec.lua
+@@ -694,6 +694,7 @@ function M.build_spec(args, opts)
+     vim.list_extend(command, nix_features)
+     append_nix_extra_args(command, opts)
+     table.insert(command, "--keep-going")
++    table.insert(command, "--no-link")
+     -- Do not lock the flake on disk just to run tests.
+     table.insert(command, "--no-write-lock-file")
+     table.insert(command, ".#" .. render_attr_path(attr_parts, installable_attr_segment))
